@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>일렉기타 타브(TAB) & 가사 & 코드 & 오디오 & 이미지 자동인식 에디터</title>
+  <title>사루쌤의 일렉기타 타브(TAB) & 가사 & 코드 & 오디오 & 이조 에디터</title>
   
   <!-- CDN Libraries -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -557,7 +557,7 @@
       border-radius: 50%;
       border: 1px solid transparent;
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
       background: transparent;
       color: #64748b;
@@ -664,6 +664,14 @@
     .score-view svg {
       display: block;
       margin: 0 auto;
+    }
+
+    /* [핵심 수정]: SVG 내 타브 프렛 숫자가 겹치지 않도록 컴팩트한 글자 크기 및 자간 적용 */
+    .score-view svg g.vf-tabnote text,
+    .score-view svg text.vf-tabnote {
+      font-size: 8.5px !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.8px !important;
     }
 
     /* A4 세로 인쇄 최적화 (한 줄에 4마디) */
@@ -1085,7 +1093,6 @@
         setShowOcrModal(false);
       };
 
-      // [핵심 버그 수정]: 올바른 Gemini REST API 스펙(camelCase, responseMimeType, 에러 핸들러 강화)
       const handleAnalyzeImage = async () => {
         if (!imagePreview) {
           alert("먼저 4마디 타브 악보 이미지를 선택하거나 붙여넣으세요.");
@@ -1105,7 +1112,6 @@
           setIsAnalyzing(true);
           localStorage.setItem("gemini_vision_api_key", apiKey);
 
-          // 정확한 MIME 타입 및 Base64 순수 데이터 추출
           const mimeMatch = imagePreview.match(/^data:(image\/[a-zA-Z+]+);base64,/);
           const mimeType = mimeMatch ? mimeMatch[1] : (imageFile?.type || "image/png");
           const base64Data = imagePreview.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
@@ -1131,7 +1137,6 @@
 }
 `;
 
-          // Google Gemini 1.5 Flash 공식 REST API (camelCase inlineData 및 application/json 강제)
           const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
           const payload = {
@@ -1160,7 +1165,6 @@
 
           const result = await response.json();
 
-          // 구글 API 에러 응답 상세 처리
           if (!response.ok || result.error) {
             const errDetail = result.error ? `${result.error.message} (코드: ${result.error.code})` : `HTTP ${response.status}`;
             throw new Error(`Google Gemini API 오류: ${errDetail}`);
@@ -1168,12 +1172,10 @@
 
           const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
           if (!rawText) {
-            // finishReason 검사 (안전성 필터 등)
             const finishReason = result.candidates?.[0]?.finishReason;
             throw new Error(finishReason ? `AI가 응답을 생성하지 못했습니다 (이유: ${finishReason})` : "AI 분석 응답이 비어 있습니다.");
           }
 
-          // 마크다운 백틱 제거 후 JSON 파싱
           let cleanJson = rawText.trim();
           if (cleanJson.startsWith("```json")) {
             cleanJson = cleanJson.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
@@ -1364,18 +1366,24 @@
 
         const VF = Vex.Flow;
         const measuresPerRow = 4;
-        const staveWidth = 175;
+        // [수정]: 1줄 4마디 폭을 182px로 넓혀 16분음표 사이의 간격 추가 확보
+        const staveWidth = 182;
         const staveHeight = 160;
         const totalRows = Math.ceil(song.measures.length / measuresPerRow);
 
         const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-        renderer.resize(720, totalRows * staveHeight + 40);
+        renderer.resize(740, totalRows * staveHeight + 40);
         const context = renderer.getContext();
+
+        // [수정]: VexFlow TabNote 전역 기본 폰트 크기를 컴팩트하게 설정
+        if (VF.TabNote && VF.TabNote.prototype && VF.TabNote.prototype.render_options) {
+          VF.TabNote.prototype.render_options.font = "bold 8.5px sans-serif";
+        }
 
         song.measures.forEach((m, idx) => {
           const col = idx % measuresPerRow;
           const row = Math.floor(idx / measuresPerRow);
-          const x = 10 + col * staveWidth;
+          const x = 6 + col * staveWidth;
           const y = 20 + row * staveHeight;
 
           const stave = new VF.TabStave(x, y, staveWidth);
@@ -1410,6 +1418,9 @@
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "h" : "hr"
               });
+              if (tabNote.render_options) {
+                tabNote.render_options.font = "bold 8.5px sans-serif";
+              }
 
               if (slot.chord && slot.chord.trim() !== "") {
                 tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
@@ -1434,6 +1445,9 @@
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "q" : "qr"
               });
+              if (tabNote.render_options) {
+                tabNote.render_options.font = "bold 8.5px sans-serif";
+              }
 
               if (slot.chord && slot.chord.trim() !== "") {
                 tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
@@ -1455,6 +1469,9 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
                 });
+                if (tabNote.render_options) {
+                  tabNote.render_options.font = "bold 8.5px sans-serif";
+                }
 
                 if (slot.chord && slot.chord.trim() !== "") {
                   tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
@@ -1477,6 +1494,9 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "16" : "16r"
                 });
+                if (tabNote.render_options) {
+                  tabNote.render_options.font = "bold 8.5px sans-serif";
+                }
 
                 if (slot.chord && slot.chord.trim() !== "") {
                   tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
@@ -1500,6 +1520,9 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
                 });
+                if (tabNote.render_options) {
+                  tabNote.render_options.font = "bold 8.5px sans-serif";
+                }
 
                 if (slot.chord && slot.chord.trim() !== "") {
                   tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
@@ -1531,6 +1554,28 @@
             }
           });
         });
+
+        // [핵심 수정 2]: SVG 내의 프렛 숫자 텍스트를 직접 찾아 글자 크기(8.5px)와 자간(-0.8px)을 강제 적용하여 두 자리 수 겹침 완전 방지
+        const svgEl = container.querySelector("svg");
+        if (svgEl) {
+          const allTexts = svgEl.querySelectorAll("text");
+          allTexts.forEach(t => {
+            const txt = t.textContent ? t.textContent.trim() : "";
+            // 3연음 괄호 번호, 클레프, 코드/가사 어노테이션은 제외하고 순수 프렛 숫자만 타겟팅
+            const isTuplet = t.closest && (t.closest(".vf-tuplet") || t.closest("g.vf-tuplet"));
+            const isAnnotation = t.closest && (t.closest(".vf-annotation") || t.closest("g.vf-annotation"));
+            const isClef = t.closest && (t.closest(".vf-clef") || t.closest("g.vf-clef"));
+
+            if (!isTuplet && !isAnnotation && !isClef && /^[0-9X]{1,2}$/.test(txt)) {
+              t.setAttribute("font-size", "8.5px");
+              t.setAttribute("font-weight", "bold");
+              t.setAttribute("letter-spacing", "-0.8px");
+              t.style.fontSize = "8.5px";
+              t.style.fontWeight = "bold";
+              t.style.letterSpacing = "-0.8px";
+            }
+          });
+        }
       }, [song]);
 
       return (
@@ -1653,7 +1698,7 @@
               </div>
               <div className="btn-group">
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  💡 <strong>이조 버튼</strong>을 누르면 악보 전체의 프렛 번호와 코드가 반음/온음 단위로 즉시 올림/내림됩니다.
+                  💡 두 자리 프렛 번호(10, 12, 15, 18 등)가 겹치지 않도록 폰트 크기와 자간이 최적화되었습니다.
                 </span>
               </div>
             </div>
