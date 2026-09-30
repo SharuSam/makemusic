@@ -160,7 +160,7 @@
       gap: 6px;
     }
 
-    /* 오디오 재생 버튼 스타일 */
+    /* 오디오 재생 버튼 */
     .btn-play {
       background: #2563eb;
       color: white;
@@ -193,57 +193,20 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       transition: border-color 0.2s;
     }
-    .measure-box.playing-measure {
-      border: 2px solid #3b82f6;
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
-    }
     .measure-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-      gap: 10px;
+      margin-bottom: 10px;
     }
     .measure-title {
       font-size: 15px;
       font-weight: 800;
       color: #1e293b;
     }
-
-    /* 상단 코드 입력 영역 */
-    .chord-input-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #f8fafc;
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-    }
-    .chord-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .chord-group label {
+    .measure-hint {
       font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-    }
-    .chord-input {
-      width: 70px;
-      padding: 4px 8px;
-      font-size: 14px;
-      font-weight: 800;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      text-align: center;
-    }
-    .chord-input:focus {
-      border-color: #2563eb;
-      outline: 2px solid #2563eb;
+      color: #64748b;
     }
 
     /* 박자별 리듬(음가) 선택 컨트롤 바 */
@@ -287,7 +250,7 @@
       background: #fafafa;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
-      padding: 10px 0 6px 0;
+      padding: 6px 0;
       overflow-x: auto;
     }
     .staff-table {
@@ -296,12 +259,13 @@
       table-layout: fixed;
     }
 
+    /* 헤더 */
     .staff-header-th {
       background: #f1f5f9;
       font-size: 11px;
       font-weight: 700;
       color: #475569;
-      padding: 6px 0;
+      padding: 5px 0;
       border-bottom: 2px solid #94a3b8;
       border-right: 1px dashed #cbd5e1;
       text-align: center;
@@ -316,6 +280,45 @@
       border-left: 2px solid #3b82f6;
       background: #e0f2fe;
       color: #0369a1;
+    }
+
+    /* [새 기능]: 상단 자유 코드(Chord) 입력 행 */
+    .chord-title-td {
+      background: #f0fdf4;
+      color: #15803d;
+      font-weight: 800;
+      font-size: 12px;
+      padding-left: 8px;
+      border-right: 2px solid #16a34a;
+      border-bottom: 2px solid #16a34a;
+      height: 34px;
+    }
+    .chord-slot-td {
+      background: #f0fdf4;
+      border-bottom: 2px solid #16a34a;
+      border-right: 1px dashed #bbf7d0;
+      padding: 3px 2px;
+      text-align: center;
+    }
+    .chord-slot-td.beat-start-td {
+      border-left: 2px solid #86efac;
+    }
+    .chord-slot-td input {
+      width: 100%;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #166534;
+      padding: 3px 0;
+      background: transparent;
+      outline: none;
+    }
+    .chord-slot-td input:focus {
+      background: #ffffff;
+      border-color: #16a34a;
+      box-shadow: 0 0 0 1.5px #16a34a;
     }
 
     /* 기타 6선지 행 */
@@ -509,7 +512,6 @@
       { num: 6, label: "6 (Low E)" }
     ];
 
-    // 표준 기타 개방현 주파수 (Hz)
     const BASE_FREQS = {
       1: 329.63, // E4
       2: 246.94, // B3
@@ -521,7 +523,8 @@
 
     const PALETTE_FRETS = ["0", "1", "2", "3", "4", "5", "7", "8", "9", "10", "12", "15", "X", "DEL"];
 
-    const createSlot = () => ({ strings: {}, lyric: "" });
+    // 각 슬롯 생성: chord(원하는 위치에 자유 입력), strings(프렛), lyric(가사)
+    const createSlot = () => ({ chord: "", strings: {}, lyric: "" });
 
     function createBeat(type = "4") {
       let count = 1;
@@ -537,10 +540,9 @@
     }
 
     const createInitialMeasures = () => {
+      // 마디 1: 1박에 Am 코드, 3박에 G 코드 (원하는 박자 위치에 자유 배치)
       const m1 = {
         id: 1,
-        chord1: "Am",
-        chord2: "",
         beats: [
           createBeat("4"),
           createBeat("8"),
@@ -548,9 +550,11 @@
           createBeat("16")
         ]
       };
+      m1.beats[0].slots[0].chord = "Am";
       m1.beats[0].slots[0].strings[1] = "0"; m1.beats[0].slots[0].strings[2] = "1"; m1.beats[0].slots[0].strings[3] = "2"; m1.beats[0].slots[0].lyric = "시-";
       m1.beats[1].slots[0].strings[3] = "2"; m1.beats[1].slots[0].lyric = "작-";
       m1.beats[1].slots[1].strings[3] = "0";
+      m1.beats[2].slots[0].chord = "G";
       m1.beats[2].slots[0].strings[4] = "2"; m1.beats[2].slots[0].lyric = "하-";
       m1.beats[2].slots[1].strings[4] = "0";
       m1.beats[2].slots[2].strings[5] = "3"; m1.beats[2].slots[2].lyric = "는";
@@ -559,10 +563,9 @@
       m1.beats[3].slots[2].strings[5] = "3";
       m1.beats[3].slots[3].strings[6] = "3";
 
+      // 마디 2: 1박에 C, 2박에 D7, 3박에 G
       const m2 = {
         id: 2,
-        chord1: "G",
-        chord2: "",
         beats: [
           createBeat("8"),
           createBeat("8"),
@@ -570,16 +573,18 @@
           createBeat("4")
         ]
       };
+      m2.beats[0].slots[0].chord = "C";
       m2.beats[0].slots[0].strings[1] = "3"; m2.beats[0].slots[0].lyric = "타-";
       m2.beats[0].slots[1].strings[2] = "0";
+      m2.beats[1].slots[0].chord = "D7";
       m2.beats[1].slots[0].strings[3] = "0"; m2.beats[1].slots[0].lyric = "브-";
       m2.beats[1].slots[1].strings[4] = "0";
+      m2.beats[2].slots[0].chord = "G";
       m2.beats[2].slots[0].strings[1] = "3"; m2.beats[2].slots[0].strings[6] = "3"; m2.beats[2].slots[0].lyric = "연습";
 
+      // 마디 3: F, G, C
       const m3 = {
         id: 3,
-        chord1: "F",
-        chord2: "C",
         beats: [
           createBeat("4"),
           createBeat("4"),
@@ -587,17 +592,19 @@
           createBeat("8")
         ]
       };
+      m3.beats[0].slots[0].chord = "F";
       m3.beats[0].slots[0].strings[1] = "1"; m3.beats[0].slots[0].strings[2] = "1"; m3.beats[0].slots[0].strings[3] = "2"; m3.beats[0].slots[0].lyric = "F";
+      m3.beats[1].slots[0].chord = "G";
       m3.beats[1].slots[0].strings[3] = "2"; m3.beats[1].slots[0].lyric = "솔-";
+      m3.beats[2].slots[0].chord = "C";
       m3.beats[2].slots[0].strings[2] = "1"; m3.beats[2].slots[0].lyric = "C";
       m3.beats[2].slots[1].strings[3] = "0";
       m3.beats[3].slots[0].strings[4] = "2"; m3.beats[3].slots[0].lyric = "로";
       m3.beats[3].slots[1].strings[5] = "3";
 
+      // 마디 4: E7
       const m4 = {
         id: 4,
-        chord1: "E7",
-        chord2: "",
         beats: [
           createBeat("2"),
           createBeat("4"),
@@ -605,6 +612,7 @@
           createBeat("4")
         ]
       };
+      m4.beats[0].slots[0].chord = "E7";
       m4.beats[0].slots[0].strings[1] = "0"; m4.beats[0].slots[0].strings[2] = "0"; m4.beats[0].slots[0].strings[3] = "1"; m4.beats[0].slots[0].strings[4] = "0"; m4.beats[0].slots[0].strings[5] = "2"; m4.beats[0].slots[0].strings[6] = "0"; m4.beats[0].slots[0].lyric = "끝";
       m4.beats[2].slots[0].strings[1] = "0"; m4.beats[2].slots[0].strings[6] = "0";
 
@@ -630,31 +638,26 @@
       const audioCtxRef = useRef(null);
       const playTimersRef = useRef([]);
 
-      // Web Audio API를 통한 일렉기타 스트링 사운드 합성
       const playGuitarNote = (audioCtx, freq, durationSec) => {
         if (!freq || isNaN(freq)) return;
         const now = audioCtx.currentTime;
 
-        // 메인 픽업 오실레이터 (톱니파로 화려한 하모닉스 생성)
         const osc = audioCtx.createOscillator();
         osc.type = "sawtooth";
         osc.frequency.setValueAtTime(freq, now);
 
-        // 서브 바디 톤 오실레이터 (삼각파로 울림 제공)
         const oscSub = audioCtx.createOscillator();
         oscSub.type = "triangle";
         oscSub.frequency.setValueAtTime(freq, now);
 
-        // 픽 어택 로우패스 필터
         const filter = audioCtx.createBiquadFilter();
         filter.type = "lowpass";
         filter.frequency.setValueAtTime(Math.min(freq * 8, 7500), now);
         filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.8, 350), now + 0.12);
 
-        // 플럭(Pluck) 엔벨로프
         const gainNode = audioCtx.createGain();
         gainNode.gain.setValueAtTime(0.0001, now);
-        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.006); // 6ms 어택
+        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.006);
         gainNode.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(durationSec * 1.3, 0.45));
 
         osc.connect(filter);
@@ -668,14 +671,12 @@
         oscSub.stop(now + durationSec * 1.5);
       };
 
-      // 연주 시작
       const handlePlay = () => {
         if (isPlaying) {
           handleStop();
           return;
         }
 
-        // AudioContext 초기화
         if (!audioCtxRef.current) {
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           audioCtxRef.current = new AudioContextClass();
@@ -688,9 +689,8 @@
         playTimersRef.current = [];
 
         const bpm = parseInt(song.tempo, 10) || 120;
-        const quarterSec = 60 / bpm; // 4분음표 1박 길이(초)
+        const quarterSec = 60 / bpm;
 
-        // 모든 마디와 슬롯을 시계열로 스케줄링
         let currentOffset = 0;
 
         song.measures.forEach((m, mIdx) => {
@@ -720,7 +720,6 @@
               const timer = setTimeout(() => {
                 setPlayingSlotKey(slotKey);
 
-                // 찍힌 프렛 번호 주파수 계산 및 동시 발음 (코드 또는 단음)
                 Object.keys(slot.strings).forEach((strNum, chordDelayIdx) => {
                   const fretVal = slot.strings[strNum];
                   if (fretVal !== undefined && fretVal !== "" && fretVal !== "X") {
@@ -728,7 +727,6 @@
                     if (!isNaN(fNum)) {
                       const baseFreq = BASE_FREQS[strNum];
                       const noteFreq = baseFreq * Math.pow(2, fNum / 12);
-                      // 약간의 스트럼(Strumming) 시간차(0.015초)를 주어 실제 기타 피킹 사운드 재현
                       setTimeout(() => {
                         playGuitarNote(audioCtxRef.current, noteFreq, slotDurationSec);
                       }, chordDelayIdx * 16);
@@ -743,7 +741,6 @@
           }
         });
 
-        // 연주 종료 처리
         const finishTimer = setTimeout(() => {
           setIsPlaying(false);
           setPlayingSlotKey(null);
@@ -751,7 +748,6 @@
         playTimersRef.current.push(finishTimer);
       };
 
-      // 연주 중지
       const handleStop = () => {
         playTimersRef.current.forEach(timer => clearTimeout(timer));
         playTimersRef.current = [];
@@ -766,8 +762,6 @@
             ...prev.measures,
             {
               id: Date.now(),
-              chord1: "",
-              chord2: "",
               beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")]
             }
           ]
@@ -779,10 +773,11 @@
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
       };
 
-      const handleChordChange = (mIdx, chordKey, val) => {
+      // [원하는 위치에 코드 입력]
+      const handleSlotChordChange = (mIdx, bIdx, slotIdx, val) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
-          nextMeasures[mIdx][chordKey] = val;
+          nextMeasures[mIdx].beats[bIdx].slots[slotIdx].chord = val;
           return { ...prev, measures: nextMeasures };
         });
       };
@@ -807,7 +802,6 @@
               delete currentStrings[strNum];
             } else {
               currentStrings[strNum] = selectedFret;
-              // 프렛 찍을 때 실시간 모니터링 단음 재생
               if (audioCtxRef.current) {
                 const fNum = parseInt(selectedFret, 10);
                 if (!isNaN(fNum)) {
@@ -831,7 +825,7 @@
         });
       };
 
-      // VexFlow 렌더링
+      // VexFlow 렌더링: 각 음표별 상단에 코드 Annotation 배치
       useEffect(() => {
         if (!scoreRef.current) return;
         const container = scoreRef.current;
@@ -859,20 +853,6 @@
           }
           stave.setContext(context).draw();
 
-          const topLineY = stave.getYForLine(0);
-
-          // 상단 코드 표기
-          context.setFont("sans-serif", 13, "bold");
-          context.setFillStyle("#0f172a");
-
-          if (m.chord1 && m.chord1.trim() !== "") {
-            context.fillText(m.chord1.trim(), x + (col === 0 ? 32 : 8), topLineY - 8);
-          }
-          if (m.chord2 && m.chord2.trim() !== "") {
-            context.fillText(m.chord2.trim(), x + staveWidth / 2 + 5, topLineY - 8);
-          }
-
-          // 음표 & 셋잇단음표 변환
           const notes = [];
           const tuplets = [];
           let skipNextBeat = false;
@@ -899,8 +879,13 @@
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "h" : "hr"
               });
-              if (slot.lyric) {
-                tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+
+              // 해당 위치에 코드가 있으면 상단(TOP)에 표기
+              if (slot.chord && slot.chord.trim() !== "") {
+                tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+              }
+              if (slot.lyric && slot.lyric.trim() !== "") {
+                tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
               }
               notes.push(tabNote);
               continue;
@@ -919,8 +904,12 @@
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "q" : "qr"
               });
-              if (slot.lyric) {
-                tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+
+              if (slot.chord && slot.chord.trim() !== "") {
+                tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+              }
+              if (slot.lyric && slot.lyric.trim() !== "") {
+                tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
               }
               notes.push(tabNote);
             } else if (beat.type === "8") {
@@ -936,8 +925,12 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
                 });
-                if (slot.lyric) {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+
+                if (slot.chord && slot.chord.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                }
+                if (slot.lyric && slot.lyric.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
                 }
                 notes.push(tabNote);
               });
@@ -954,8 +947,12 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "16" : "16r"
                 });
-                if (slot.lyric) {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+
+                if (slot.chord && slot.chord.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                }
+                if (slot.lyric && slot.lyric.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
                 }
                 notes.push(tabNote);
               });
@@ -973,8 +970,12 @@
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
                 });
-                if (slot.lyric) {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+
+                if (slot.chord && slot.chord.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                }
+                if (slot.lyric && slot.lyric.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
                 }
                 tripletNotes.push(tabNote);
                 notes.push(tabNote);
@@ -1068,7 +1069,7 @@
               </div>
               <div className="btn-group-right">
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  💡 <strong>[▶️ 연주 듣기]</strong> 버튼을 누르면 템포({song.tempo} BPM)에 맞춰 실제 일렉기타 피킹 소리로 악보가 재생됩니다.
+                  💡 6선지 바로 위 <strong>[코드 행]</strong>에서 각 박자/음표마다 원하는 코드를 자유롭게 입력하실 수 있습니다.
                 </span>
               </div>
             </div>
@@ -1078,28 +1079,7 @@
               <div key={m.id} className="measure-box">
                 <div className="measure-header">
                   <span className="measure-title">마디 #{mIdx + 1}</span>
-                  
-                  {/* 상단 코드 입력란 */}
-                  <div className="chord-input-area">
-                    <div className="chord-group">
-                      <label>코드 1 (전반부):</label>
-                      <input
-                        className="chord-input"
-                        placeholder="예: Am"
-                        value={m.chord1 || ""}
-                        onChange={e => handleChordChange(mIdx, "chord1", e.target.value)}
-                      />
-                    </div>
-                    <div className="chord-group">
-                      <label>코드 2 (후반부):</label>
-                      <input
-                        className="chord-input"
-                        placeholder="예: G"
-                        value={m.chord2 || ""}
-                        onChange={e => handleChordChange(mIdx, "chord2", e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <span className="measure-hint">💡 각 칸마다 개별 코드와 가사를 입력할 수 있습니다.</span>
                 </div>
 
                 {/* 박자별 리듬(음가) 선택 컨트롤 바 */}
@@ -1124,12 +1104,12 @@
                   ))}
                 </div>
 
-                {/* 6선지 직접 찍기 인터랙티브 스태프 */}
+                {/* 6선지 직접 찍기 인터랙티브 스태프 (상단 코드행 + 6현 + 하단 가사행) */}
                 <div className="staff-container">
                   <table className="staff-table">
                     <thead>
                       <tr>
-                        <th className="staff-header-th staff-header-corner">줄 \ 리듬</th>
+                        <th className="staff-header-th staff-header-corner">구분 \ 박자</th>
                         {m.beats.map((beat, bIdx) =>
                           beat.slots.map((_, sIdx) => (
                             <th
@@ -1146,6 +1126,26 @@
                       </tr>
                     </thead>
                     <tbody>
+                      {/* [새 기능]: 원하는 위치에 자유롭게 입력하는 코드(Chord) 행 */}
+                      <tr>
+                        <td className="chord-title-td">코드 (Chord)</td>
+                        {m.beats.map((beat, bIdx) =>
+                          beat.slots.map((slot, sIdx) => (
+                            <td
+                              key={`${bIdx}-${sIdx}`}
+                              className={`chord-slot-td ${sIdx === 0 ? "beat-start-td" : ""}`}
+                            >
+                              <input
+                                placeholder="코드"
+                                value={slot.chord || ""}
+                                onChange={e => handleSlotChordChange(mIdx, bIdx, sIdx, e.target.value)}
+                              />
+                            </td>
+                          ))
+                        )}
+                      </tr>
+
+                      {/* 6선지 현 (프렛 번호 찍기) */}
                       {STRINGS.map(str => (
                         <tr key={str.num} className={`string-row string-row-${str.num}`}>
                           <td className="str-label-td">{str.label}</td>
@@ -1173,9 +1173,10 @@
                           )}
                         </tr>
                       ))}
+
                       {/* 가사 입력 행 */}
                       <tr>
-                        <td className="lyric-title-td">가사</td>
+                        <td className="lyric-title-td">가사 (Lyrics)</td>
                         {m.beats.map((beat, bIdx) =>
                           beat.slots.map((slot, sIdx) => (
                             <td
@@ -1198,7 +1199,7 @@
             ))}
           </div>
 
-          {/* A4 악보 용지 영역 (인쇄 대상: 한 줄에 4마디 정렬, 상단 코드 표기) */}
+          {/* A4 악보 용지 영역 (인쇄 대상: 한 줄에 4마디 정렬, 각 음표별 상단에 코드 자동 안착) */}
           <div className="sheet-wrapper">
             <div className="a4-sheet">
               <div className="sheet-header">
