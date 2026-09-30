@@ -138,20 +138,17 @@
       padding-bottom: 16px;
       border-bottom: 1px solid #e2e8f0;
     }
-    .btn-group-left {
+    .btn-group {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-    }
-    .btn-group-right {
-      display: flex;
-      gap: 10px;
       align-items: center;
     }
     button {
       cursor: pointer;
       font-size: 14px;
       font-weight: 600;
-      padding: 9px 16px;
+      padding: 8px 15px;
       border-radius: 6px;
       border: none;
       transition: all 0.2s;
@@ -160,28 +157,90 @@
       gap: 6px;
     }
 
-    /* 오디오 재생 버튼 */
-    .btn-play {
-      background: #2563eb;
-      color: white;
-      font-size: 15px;
-      padding: 9px 20px;
-    }
+    /* 버튼 스타일 */
+    .btn-play { background: #2563eb; color: white; }
     .btn-play:hover { background: #1d4ed8; }
-    .btn-stop {
-      background: #ef4444;
-      color: white;
-      font-size: 15px;
-      padding: 9px 20px;
-    }
+    .btn-stop { background: #ef4444; color: white; }
     .btn-stop:hover { background: #dc2626; }
 
-    .btn-print { background: #059669; color: white; font-size: 15px; padding: 9px 18px; }
+    .btn-save { background: #0284c7; color: white; }
+    .btn-save:hover { background: #0369a1; }
+    .btn-load { background: #0d9488; color: white; }
+    .btn-load:hover { background: #0f766e; }
+    .btn-reset { background: #f59e0b; color: white; }
+    .btn-reset:hover { background: #d97706; }
+
+    .btn-print { background: #059669; color: white; }
     .btn-print:hover { background: #047857; }
     .btn-add { background: #475569; color: white; }
     .btn-add:hover { background: #334155; }
     .btn-del { background: #fee2e2; color: #dc2626; }
     .btn-del:hover { background: #fecaca; }
+
+    /* 알림 토스트 */
+    .toast-msg {
+      background: #10b981;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    /* 악보 목록 모달 팝업 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-card {
+      background: white;
+      width: 100%;
+      max-width: 540px;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 12px;
+    }
+    .modal-header h3 { font-size: 18px; color: #0f172a; }
+    .saved-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .saved-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .saved-item:last-child { border-bottom: none; }
+    .saved-item-info {
+      flex: 1;
+    }
+    .saved-item-title { font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 2px; }
+    .saved-item-date { font-size: 11px; color: #64748b; }
+    .saved-item-actions { display: flex; gap: 6px; }
 
     /* 마디 편집 상자 */
     .measure-box {
@@ -259,7 +318,6 @@
       table-layout: fixed;
     }
 
-    /* 헤더 */
     .staff-header-th {
       background: #f1f5f9;
       font-size: 11px;
@@ -361,7 +419,7 @@
     .string-row-5 .string-line { height: 2px; background: #475569; }
     .string-row-6 .string-line { height: 2.5px; background: #334155; }
 
-    /* [핵심 기능]: 타브를 찍으면 프렛 번호를 바로 작성하는 인라인 프렛 입력 인풋 */
+    /* 인라인 프렛 입력 인풋 */
     .inline-fret-input {
       position: relative;
       z-index: 3;
@@ -391,7 +449,6 @@
       border: 2px solid #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
     }
-    /* 숫자가 입력되어 있는 상태의 프렛 뱃지 스타일 */
     .inline-fret-input.has-fret {
       background: #1e293b;
       color: #ffffff;
@@ -490,7 +547,7 @@
         background: transparent !important;
         padding: 0 !important;
       }
-      .no-print {
+      .no-print, .modal-overlay {
         display: none !important;
       }
       .sheet-wrapper {
@@ -643,11 +700,124 @@
       const [customFret, setCustomFret] = useState("");
       const [isPlaying, setIsPlaying] = useState(false);
       const [playingSlotKey, setPlayingSlotKey] = useState(null);
+      const [toast, setToast] = useState(null);
+      const [showLoadModal, setShowLoadModal] = useState(false);
+      const [savedList, setSavedList] = useState([]);
 
       const scoreRef = useRef(null);
       const audioCtxRef = useRef(null);
       const playTimersRef = useRef([]);
+      const fileInputRef = useRef(null);
 
+      // 토스트 메시지 출력
+      const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      // [기능 1]: 악보 저장하기 (브라우저 로컬 저장)
+      const handleSave = () => {
+        try {
+          const key = "guitar_tab_saved_scores";
+          const raw = localStorage.getItem(key);
+          const list = raw ? JSON.parse(raw) : [];
+
+          const newEntry = {
+            id: Date.now(),
+            savedAt: new Date().toLocaleString(),
+            title: song.title || "무제 악보",
+            data: song
+          };
+
+          // 기존 같은 제목이 있으면 덮어쓰거나 추가
+          const updated = [newEntry, ...list.filter(item => item.title !== song.title)];
+          localStorage.setItem(key, JSON.stringify(updated));
+          showToast(`💾 "${song.title}" 악보가 안전하게 저장되었습니다! 언제든 [불러오기]에서 다시 열 수 있습니다.`);
+        } catch (e) {
+          showToast("저장 중 오류가 발생했습니다.");
+        }
+      };
+
+      // [기능 2]: 악보 불러오기 모달 열기
+      const handleOpenLoadModal = () => {
+        try {
+          const raw = localStorage.getItem("guitar_tab_saved_scores");
+          const list = raw ? JSON.parse(raw) : [];
+          setSavedList(list);
+          setShowLoadModal(true);
+        } catch (e) {
+          setSavedList([]);
+          setShowLoadModal(true);
+        }
+      };
+
+      // 저장된 항목 로드
+      const loadSavedScore = (entry) => {
+        setSong(entry.data);
+        setShowLoadModal(false);
+        showToast(`📂 "${entry.title}" 악보를 성공적으로 불러왔습니다.`);
+      };
+
+      // 저장된 항목 삭제
+      const deleteSavedScore = (id) => {
+        const updated = savedList.filter(item => item.id !== id);
+        setSavedList(updated);
+        localStorage.setItem("guitar_tab_saved_scores", JSON.stringify(updated));
+      };
+
+      // [기능 3]: 전체 초기화 (새로 작성하기)
+      const handleReset = () => {
+        if (window.confirm("현재 작성 중인 악보를 모두 지우고 빈 악보로 새로 시작하시겠습니까?\n(중요한 악보는 미리 [저장하기]를 눌러 두세요)")) {
+          setSong({
+            title: "새로운 기타 악보",
+            artist: "연주자",
+            tuning: "Standard (E A D G B E)",
+            tempo: "120",
+            measures: [
+              { id: Date.now(), beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+              { id: Date.now() + 1, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+              { id: Date.now() + 2, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+              { id: Date.now() + 3, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] }
+            ]
+          });
+          showToast("🔄 악보가 깨끗하게 초기화되었습니다. 새로 작성을 시작하세요!");
+        }
+      };
+
+      // [보너스 기능]: PC 파일(.json)로 내보내기 & 가져오기
+      const handleExportFile = () => {
+        const blob = new Blob([JSON.stringify(song, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${song.title || "guitar_tab"}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("💾 컴퓨터 파일(.json)로 다운로드되었습니다.");
+      };
+
+      const handleImportFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.measures) {
+              setSong(data);
+              setShowLoadModal(false);
+              showToast(`📂 파일에서 "${data.title}" 악보를 성공적으로 불러왔습니다.`);
+            } else {
+              alert("올바른 악보 파일 형식이 아닙니다.");
+            }
+          } catch (err) {
+            alert("파일을 읽는 중 오류가 발생했습니다.");
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      // 오디오 사운드 합성
       const playGuitarNote = (audioCtx, freq, durationSec) => {
         if (!freq || isNaN(freq)) return;
         const now = audioCtx.currentTime;
@@ -783,7 +953,6 @@
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
       };
 
-      // 코드 입력
       const handleSlotChordChange = (mIdx, bIdx, slotIdx, val) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -792,7 +961,6 @@
         });
       };
 
-      // 리듬 변경
       const handleRhythmChange = (mIdx, bIdx, newType) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -801,7 +969,6 @@
         });
       };
 
-      // [핵심 기능 1]: 타브 현을 찍었을 때 인라인으로 프렛 번호 바로 작성 & 소리 재생
       const handleInlineFretChange = (mIdx, bIdx, slotIdx, strNum, val) => {
         const clean = val.trim().toUpperCase();
         setSong(prev => {
@@ -812,7 +979,6 @@
             delete currentStrings[strNum];
           } else {
             currentStrings[strNum] = clean;
-            // 프렛 번호 입력 즉시 기타 소리 재생
             if (!audioCtxRef.current) {
               const AudioContextClass = window.AudioContext || window.webkitAudioContext;
               audioCtxRef.current = new AudioContextClass();
@@ -832,7 +998,6 @@
         });
       };
 
-      // [핵심 기능 2]: 방향키(상하좌우), Tab, Enter, Backspace로 타브를 넘나들며 바로 연속 작성
       const handleFretKeyDown = (e, mIdx, bIdx, sIdx, strNum) => {
         if (e.key === "ArrowUp") {
           e.preventDefault();
@@ -1034,18 +1199,35 @@
 
       return (
         <div className="app-container">
+          {/* 알림 토스트 */}
+          {toast && (
+            <div className="toast-msg no-print">
+              <span>{toast}</span>
+              <button style={{ background: "transparent", color: "white", padding: 0 }} onClick={() => setToast(null)}>✕</button>
+            </div>
+          )}
+
           <div className="editor-card no-print">
             <div className="card-top">
               <h2>🎸 일렉기타 타브 & 가사 & 코드 & 오디오 연주 에디터</h2>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button
                   className={isPlaying ? "btn-stop" : "btn-play"}
                   onClick={handlePlay}
                 >
-                  {isPlaying ? "⏹️ 연주 중지" : "▶️ 연주 듣기 (Play)"}
+                  {isPlaying ? "⏹️ 연주 중지" : "▶️ 연주 듣기"}
+                </button>
+                <button className="btn-save" onClick={handleSave} title="브라우저에 현재 악보 저장">
+                  💾 악보 저장
+                </button>
+                <button className="btn-load" onClick={handleOpenLoadModal} title="이전에 저장한 악보 불러오기">
+                  📂 불러오기
+                </button>
+                <button className="btn-reset" onClick={handleReset} title="처음부터 다시 작성">
+                  🔄 전체 초기화
                 </button>
                 <button className="btn-print" onClick={() => window.print()}>
-                  🖨️ A4 악보 출력하기 (4마디/줄)
+                  🖨️ A4 악보 출력
                 </button>
               </div>
             </div>
@@ -1064,7 +1246,7 @@
                 <input value={song.tuning} onChange={e => setSong({...song, tuning: e.target.value})} />
               </div>
               <div>
-                <label>템포 (BPM - 연주 속도)</label>
+                <label>템포 (BPM)</label>
                 <input value={song.tempo} onChange={e => setSong({...song, tempo: e.target.value})} />
               </div>
             </div>
@@ -1093,14 +1275,14 @@
             </div>
 
             <div className="toolbar">
-              <div className="btn-group-left">
+              <div className="btn-group">
                 <button className="btn-add" onClick={addMeasure}>➕ 마디 추가</button>
                 <button className="btn-del" onClick={removeMeasure}>➖ 마지막 마디 삭제</button>
               </div>
-              <div className="btn-group-right">
-                <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  💡 <strong>타브 선 위를 클릭하면 프렛 번호를 키보드로 바로 타이핑</strong>할 수 있으며, 방향키(↑, ↓)로 줄을 이동할 수 있습니다.
-                </span>
+              <div className="btn-group">
+                <button style={{ background: "#e2e8f0", color: "#334155" }} onClick={handleExportFile} title="내 컴퓨터 파일(.json)로 저장">
+                  💾 파일로 백업 (.json)
+                </button>
               </div>
             </div>
 
@@ -1236,6 +1418,59 @@
               </div>
             ))}
           </div>
+
+          {/* 저장 목록 불러오기 모달 */}
+          {showLoadModal && (
+            <div className="modal-overlay no-print" onClick={() => setShowLoadModal(false)}>
+              <div className="modal-card" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3>📂 저장된 악보 목록</h3>
+                  <button style={{ background: "transparent", color: "#64748b", fontSize: "18px" }} onClick={() => setShowLoadModal(false)}>✕</button>
+                </div>
+
+                {savedList.length === 0 ? (
+                  <p style={{ textAlign: "center", color: "#64748b", padding: "24px 0", fontSize: "14px" }}>
+                    아직 브라우저에 저장된 악보가 없습니다.<br />[💾 악보 저장] 버튼을 눌러 악보를 저장해 보세요.
+                  </p>
+                ) : (
+                  <div className="saved-list">
+                    {savedList.map(item => (
+                      <div key={item.id} className="saved-item">
+                        <div className="saved-item-info">
+                          <div className="saved-item-title">{item.title}</div>
+                          <div className="saved-item-date">저장일시: {item.savedAt}</div>
+                        </div>
+                        <div className="saved-item-actions">
+                          <button className="btn-load" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={() => loadSavedScore(item)}>
+                            열기
+                          </button>
+                          <button className="btn-del" style={{ padding: "6px 10px", fontSize: "12px" }} onClick={() => deleteSavedScore(item.id)}>
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+                  <button style={{ background: "#475569", color: "white", fontSize: "13px" }} onClick={() => fileInputRef.current?.click()}>
+                    📁 컴퓨터에서 파일 열기 (.json)
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    style={{ display: "none" }}
+                    onChange={handleImportFile}
+                  />
+                  <button style={{ background: "#e2e8f0", color: "#334155", fontSize: "13px" }} onClick={() => setShowLoadModal(false)}>
+                    닫기
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* A4 악보 용지 영역 */}
           <div className="sheet-wrapper">
