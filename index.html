@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>일렉기타 타브(TAB) & 가사 & 코드 에디터</title>
+  <title>일렉기타 타브(TAB) & 가사 & 코드 & 오디오 연주 에디터</title>
   
   <!-- CDN Libraries -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -34,6 +34,8 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
     .card-top h2 {
       font-size: 20px;
@@ -125,10 +127,25 @@
       font-size: 13px;
     }
 
+    /* 상단 액션 툴바 */
     .toolbar {
       display: flex;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .btn-group-left {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-group-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
     button {
       cursor: pointer;
@@ -138,11 +155,31 @@
       border-radius: 6px;
       border: none;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .btn-print { background: #059669; color: white; font-size: 15px; }
+
+    /* 오디오 재생 버튼 스타일 */
+    .btn-play {
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      padding: 9px 20px;
+    }
+    .btn-play:hover { background: #1d4ed8; }
+    .btn-stop {
+      background: #ef4444;
+      color: white;
+      font-size: 15px;
+      padding: 9px 20px;
+    }
+    .btn-stop:hover { background: #dc2626; }
+
+    .btn-print { background: #059669; color: white; font-size: 15px; padding: 9px 18px; }
     .btn-print:hover { background: #047857; }
-    .btn-add { background: #2563eb; color: white; }
-    .btn-add:hover { background: #1d4ed8; }
+    .btn-add { background: #475569; color: white; }
+    .btn-add:hover { background: #334155; }
     .btn-del { background: #fee2e2; color: #dc2626; }
     .btn-del:hover { background: #fecaca; }
 
@@ -154,6 +191,11 @@
       margin-bottom: 22px;
       background: #ffffff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: border-color 0.2s;
+    }
+    .measure-box.playing-measure {
+      border: 2px solid #3b82f6;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
     }
     .measure-header {
       display: flex;
@@ -254,7 +296,6 @@
       table-layout: fixed;
     }
 
-    /* 헤더 */
     .staff-header-th {
       background: #f1f5f9;
       font-size: 11px;
@@ -294,9 +335,13 @@
       border-right: 1px dashed #e2e8f0;
       text-align: center;
       padding: 0;
+      transition: background 0.1s;
     }
     .slot-cell.beat-start-td {
       border-left: 2px solid #e0f2fe;
+    }
+    .slot-cell.playing-slot {
+      background: #fef08a !important;
     }
     .string-line {
       position: absolute;
@@ -464,9 +509,18 @@
       { num: 6, label: "6 (Low E)" }
     ];
 
+    // 표준 기타 개방현 주파수 (Hz)
+    const BASE_FREQS = {
+      1: 329.63, // E4
+      2: 246.94, // B3
+      3: 196.00, // G3
+      4: 146.83, // D3
+      5: 110.00, // A2
+      6: 82.41   // E2
+    };
+
     const PALETTE_FRETS = ["0", "1", "2", "3", "4", "5", "7", "8", "9", "10", "12", "15", "X", "DEL"];
 
-    // 리듬 슬롯 생성
     const createSlot = () => ({ strings: {}, lyric: "" });
 
     function createBeat(type = "4") {
@@ -474,17 +528,15 @@
       if (type === "8") count = 2;
       else if (type === "16") count = 4;
       else if (type === "triplet") count = 3;
-      else if (type === "2") count = 1; // 2분음표는 1슬롯 (2박자 지속)
+      else if (type === "2") count = 1;
 
       return {
-        type, // "2", "4", "8", "16", "triplet"
+        type,
         slots: Array.from({ length: count }, createSlot)
       };
     }
 
-    // 초기 데모 곡
     const createInitialMeasures = () => {
-      // 마디 1: Am 코드, 4분, 8분, 셋잇단, 16분
       const m1 = {
         id: 1,
         chord1: "Am",
@@ -507,7 +559,6 @@
       m1.beats[3].slots[2].strings[5] = "3";
       m1.beats[3].slots[3].strings[6] = "3";
 
-      // 마디 2: G 코드, 8분, 8분, 2분음표
       const m2 = {
         id: 2,
         chord1: "G",
@@ -516,7 +567,7 @@
           createBeat("8"),
           createBeat("8"),
           createBeat("2"),
-          createBeat("4") // 2분음표에 흡수됨
+          createBeat("4")
         ]
       };
       m2.beats[0].slots[0].strings[1] = "3"; m2.beats[0].slots[0].lyric = "타-";
@@ -525,7 +576,6 @@
       m2.beats[1].slots[1].strings[4] = "0";
       m2.beats[2].slots[0].strings[1] = "3"; m2.beats[2].slots[0].strings[6] = "3"; m2.beats[2].slots[0].lyric = "연습";
 
-      // 마디 3: F, C 코드
       const m3 = {
         id: 3,
         chord1: "F",
@@ -544,7 +594,6 @@
       m3.beats[3].slots[0].strings[4] = "2"; m3.beats[3].slots[0].lyric = "로";
       m3.beats[3].slots[1].strings[5] = "3";
 
-      // 마디 4: E7 코드, 전음표(2분+2분)
       const m4 = {
         id: 4,
         chord1: "E7",
@@ -574,9 +623,142 @@
       const [song, setSong] = useState(INITIAL_SONG);
       const [selectedFret, setSelectedFret] = useState("0");
       const [customFret, setCustomFret] = useState("");
-      const scoreRef = useRef(null);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [playingSlotKey, setPlayingSlotKey] = useState(null);
 
-      // 마디 추가
+      const scoreRef = useRef(null);
+      const audioCtxRef = useRef(null);
+      const playTimersRef = useRef([]);
+
+      // Web Audio API를 통한 일렉기타 스트링 사운드 합성
+      const playGuitarNote = (audioCtx, freq, durationSec) => {
+        if (!freq || isNaN(freq)) return;
+        const now = audioCtx.currentTime;
+
+        // 메인 픽업 오실레이터 (톱니파로 화려한 하모닉스 생성)
+        const osc = audioCtx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, now);
+
+        // 서브 바디 톤 오실레이터 (삼각파로 울림 제공)
+        const oscSub = audioCtx.createOscillator();
+        oscSub.type = "triangle";
+        oscSub.frequency.setValueAtTime(freq, now);
+
+        // 픽 어택 로우패스 필터
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(Math.min(freq * 8, 7500), now);
+        filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.8, 350), now + 0.12);
+
+        // 플럭(Pluck) 엔벨로프
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.006); // 6ms 어택
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(durationSec * 1.3, 0.45));
+
+        osc.connect(filter);
+        oscSub.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc.start(now);
+        oscSub.start(now);
+        osc.stop(now + durationSec * 1.5);
+        oscSub.stop(now + durationSec * 1.5);
+      };
+
+      // 연주 시작
+      const handlePlay = () => {
+        if (isPlaying) {
+          handleStop();
+          return;
+        }
+
+        // AudioContext 초기화
+        if (!audioCtxRef.current) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtxRef.current = new AudioContextClass();
+        }
+        if (audioCtxRef.current.state === "suspended") {
+          audioCtxRef.current.resume();
+        }
+
+        setIsPlaying(true);
+        playTimersRef.current = [];
+
+        const bpm = parseInt(song.tempo, 10) || 120;
+        const quarterSec = 60 / bpm; // 4분음표 1박 길이(초)
+
+        // 모든 마디와 슬롯을 시계열로 스케줄링
+        let currentOffset = 0;
+
+        song.measures.forEach((m, mIdx) => {
+          let skipNextBeat = false;
+          for (let bIdx = 0; bIdx < m.beats.length; bIdx++) {
+            if (skipNextBeat) {
+              skipNextBeat = false;
+              continue;
+            }
+
+            const beat = m.beats[bIdx];
+            if (beat.type === "2") {
+              if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
+            }
+
+            let slotDurationSec = quarterSec;
+            if (beat.type === "2") slotDurationSec = quarterSec * 2;
+            else if (beat.type === "4") slotDurationSec = quarterSec;
+            else if (beat.type === "8") slotDurationSec = quarterSec / 2;
+            else if (beat.type === "16") slotDurationSec = quarterSec / 4;
+            else if (beat.type === "triplet") slotDurationSec = quarterSec / 3;
+
+            beat.slots.forEach((slot, sIdx) => {
+              const scheduledTime = currentOffset;
+              const slotKey = `${mIdx}-${bIdx}-${sIdx}`;
+
+              const timer = setTimeout(() => {
+                setPlayingSlotKey(slotKey);
+
+                // 찍힌 프렛 번호 주파수 계산 및 동시 발음 (코드 또는 단음)
+                Object.keys(slot.strings).forEach((strNum, chordDelayIdx) => {
+                  const fretVal = slot.strings[strNum];
+                  if (fretVal !== undefined && fretVal !== "" && fretVal !== "X") {
+                    const fNum = parseInt(fretVal, 10);
+                    if (!isNaN(fNum)) {
+                      const baseFreq = BASE_FREQS[strNum];
+                      const noteFreq = baseFreq * Math.pow(2, fNum / 12);
+                      // 약간의 스트럼(Strumming) 시간차(0.015초)를 주어 실제 기타 피킹 사운드 재현
+                      setTimeout(() => {
+                        playGuitarNote(audioCtxRef.current, noteFreq, slotDurationSec);
+                      }, chordDelayIdx * 16);
+                    }
+                  }
+                });
+              }, scheduledTime * 1000);
+
+              playTimersRef.current.push(timer);
+              currentOffset += slotDurationSec;
+            });
+          }
+        });
+
+        // 연주 종료 처리
+        const finishTimer = setTimeout(() => {
+          setIsPlaying(false);
+          setPlayingSlotKey(null);
+        }, currentOffset * 1000 + 300);
+        playTimersRef.current.push(finishTimer);
+      };
+
+      // 연주 중지
+      const handleStop = () => {
+        playTimersRef.current.forEach(timer => clearTimeout(timer));
+        playTimersRef.current = [];
+        setIsPlaying(false);
+        setPlayingSlotKey(null);
+      };
+
       const addMeasure = () => {
         setSong(prev => ({
           ...prev,
@@ -592,13 +774,11 @@
         }));
       };
 
-      // 마디 삭제
       const removeMeasure = () => {
         if (song.measures.length <= 1) return;
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
       };
 
-      // 코드 변경
       const handleChordChange = (mIdx, chordKey, val) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -607,7 +787,6 @@
         });
       };
 
-      // 박자 리듬(음가) 변경 (2, 4, 8, 16, 셋잇단)
       const handleRhythmChange = (mIdx, bIdx, newType) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -616,7 +795,6 @@
         });
       };
 
-      // 6선지에 프렛 직접 찍기
       const handleSlotClick = (mIdx, bIdx, slotIdx, strNum) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -629,6 +807,14 @@
               delete currentStrings[strNum];
             } else {
               currentStrings[strNum] = selectedFret;
+              // 프렛 찍을 때 실시간 모니터링 단음 재생
+              if (audioCtxRef.current) {
+                const fNum = parseInt(selectedFret, 10);
+                if (!isNaN(fNum)) {
+                  const freq = BASE_FREQS[strNum] * Math.pow(2, fNum / 12);
+                  playGuitarNote(audioCtxRef.current, freq, 0.4);
+                }
+              }
             }
           }
 
@@ -637,7 +823,6 @@
         });
       };
 
-      // 가사 변경
       const handleLyricChange = (mIdx, bIdx, slotIdx, val) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -646,7 +831,7 @@
         });
       };
 
-      // VexFlow 실시간 렌더링
+      // VexFlow 렌더링
       useEffect(() => {
         if (!scoreRef.current) return;
         const container = scoreRef.current;
@@ -676,7 +861,7 @@
 
           const topLineY = stave.getYForLine(0);
 
-          // [핵심 변경 1]: 마디 숫자 대신 상단에 코드(Chord) 기호 렌더링
+          // 상단 코드 표기
           context.setFont("sans-serif", 13, "bold");
           context.setFillStyle("#0f172a");
 
@@ -687,7 +872,7 @@
             context.fillText(m.chord2.trim(), x + staveWidth / 2 + 5, topLineY - 8);
           }
 
-          // [핵심 변경 2]: 2, 4, 8, 16, 셋잇단음표 변환 & Tuplet 적용
+          // 음표 & 셋잇단음표 변환
           const notes = [];
           const tuplets = [];
           let skipNextBeat = false;
@@ -700,7 +885,6 @@
 
             const beat = m.beats[bIdx];
 
-            // 2분음표 (2박자 병합)
             if (beat.type === "2") {
               if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
               const slot = beat.slots[0];
@@ -722,7 +906,6 @@
               continue;
             }
 
-            // 4분음표
             if (beat.type === "4") {
               const slot = beat.slots[0];
               const positions = [];
@@ -740,9 +923,7 @@
                 tabNote.addModifier(new VF.Annotation(slot.lyric).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
               }
               notes.push(tabNote);
-            }
-            // 8분음표 (2분할)
-            else if (beat.type === "8") {
+            } else if (beat.type === "8") {
               beat.slots.forEach(slot => {
                 const positions = [];
                 for (let s = 1; s <= 6; s++) {
@@ -760,9 +941,7 @@
                 }
                 notes.push(tabNote);
               });
-            }
-            // 16분음표 (4분할)
-            else if (beat.type === "16") {
+            } else if (beat.type === "16") {
               beat.slots.forEach(slot => {
                 const positions = [];
                 for (let s = 1; s <= 6; s++) {
@@ -780,9 +959,7 @@
                 }
                 notes.push(tabNote);
               });
-            }
-            // 셋잇단음표 (8분 셋잇단 3연음)
-            else if (beat.type === "triplet") {
+            } else if (beat.type === "triplet") {
               const tripletNotes = [];
               beat.slots.forEach(slot => {
                 const positions = [];
@@ -803,7 +980,6 @@
                 notes.push(tabNote);
               });
 
-              // VexFlow Tuplet 생성 (3연음 표시)
               try {
                 const tuplet = new VF.Tuplet(tripletNotes, { num_notes: 3, notes_occupied: 2 });
                 tuplet.setBracketed(true);
@@ -814,10 +990,8 @@
             }
           }
 
-          // 음표 배치 및 렌더링
           VF.Formatter.FormatAndDraw(context, stave, notes);
 
-          // 셋잇단음표 괄호 렌더링
           tuplets.forEach(t => {
             try {
               t.setContext(context).draw();
@@ -832,10 +1006,18 @@
         <div className="app-container">
           <div className="editor-card no-print">
             <div className="card-top">
-              <h2>🎸 일렉기타 타브 & 가사 & 코드 에디터</h2>
-              <button className="btn-print" onClick={() => window.print()}>
-                🖨️ A4 악보 출력하기 (4마디/줄)
-              </button>
+              <h2>🎸 일렉기타 타브 & 가사 & 코드 & 오디오 연주 에디터</h2>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  className={isPlaying ? "btn-stop" : "btn-play"}
+                  onClick={handlePlay}
+                >
+                  {isPlaying ? "⏹️ 연주 중지" : "▶️ 연주 듣기 (Play)"}
+                </button>
+                <button className="btn-print" onClick={() => window.print()}>
+                  🖨️ A4 악보 출력하기 (4마디/줄)
+                </button>
+              </div>
             </div>
 
             <div className="meta-grid">
@@ -852,7 +1034,7 @@
                 <input value={song.tuning} onChange={e => setSong({...song, tuning: e.target.value})} />
               </div>
               <div>
-                <label>템포 (BPM)</label>
+                <label>템포 (BPM - 연주 속도)</label>
                 <input value={song.tempo} onChange={e => setSong({...song, tempo: e.target.value})} />
               </div>
             </div>
@@ -880,8 +1062,15 @@
             </div>
 
             <div className="toolbar">
-              <button className="btn-add" onClick={addMeasure}>➕ 마디 추가</button>
-              <button className="btn-del" onClick={removeMeasure}>➖ 마지막 마디 삭제</button>
+              <div className="btn-group-left">
+                <button className="btn-add" onClick={addMeasure}>➕ 마디 추가</button>
+                <button className="btn-del" onClick={removeMeasure}>➖ 마지막 마디 삭제</button>
+              </div>
+              <div className="btn-group-right">
+                <span style={{ fontSize: "13px", color: "#64748b" }}>
+                  💡 <strong>[▶️ 연주 듣기]</strong> 버튼을 누르면 템포({song.tempo} BPM)에 맞춰 실제 일렉기타 피킹 소리로 악보가 재생됩니다.
+                </span>
+              </div>
             </div>
 
             {/* 마디 목록 */}
@@ -963,10 +1152,12 @@
                           {m.beats.map((beat, bIdx) =>
                             beat.slots.map((slot, sIdx) => {
                               const fretVal = slot.strings[str.num];
+                              const slotKey = `${mIdx}-${bIdx}-${sIdx}`;
+                              const isSlotPlaying = playingSlotKey === slotKey;
                               return (
                                 <td
                                   key={`${bIdx}-${sIdx}`}
-                                  className={`slot-cell ${sIdx === 0 ? "beat-start-td" : ""}`}
+                                  className={`slot-cell ${sIdx === 0 ? "beat-start-td" : ""} ${isSlotPlaying ? "playing-slot" : ""}`}
                                   onClick={() => handleSlotClick(mIdx, bIdx, sIdx, str.num)}
                                   title={`${bIdx + 1}박 ${sIdx + 1}번째 / ${str.label}`}
                                 >
@@ -1007,7 +1198,7 @@
             ))}
           </div>
 
-          {/* A4 악보 용지 영역 (인쇄 대상: 마디 숫자 제거, 상단 코드 및 셋잇단 표기) */}
+          {/* A4 악보 용지 영역 (인쇄 대상: 한 줄에 4마디 정렬, 상단 코드 표기) */}
           <div className="sheet-wrapper">
             <div className="a4-sheet">
               <div className="sheet-header">
