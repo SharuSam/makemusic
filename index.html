@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>일렉기타 타브(TAB) & 가사 에디터 (4마디/16분음표 6선지 직접찍기)</title>
+  <title>일렉기타 타브(TAB) & 가사 에디터</title>
   
   <!-- CDN Libraries -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
@@ -343,7 +343,7 @@
     }
     .a4-sheet {
       background: white;
-      width: 794px;
+      width: 794px; /* A4 폭 (210mm) */
       min-height: 1123px;
       padding: 35px 25px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -552,6 +552,7 @@
         });
       };
 
+      // VexFlow 렌더링 수정: 마디 숫자와 6선 간격 밀착 및 이전 행 가사와의 겹침 완전 해결
       useEffect(() => {
         if (!scoreRef.current) return;
         const container = scoreRef.current;
@@ -560,7 +561,8 @@
         const VF = Vex.Flow;
         const measuresPerRow = 4;
         const staveWidth = 175;
-        const staveHeight = 140;
+        // 행 간격(staveHeight)을 165로 충분히 넓혀 가사와 다음 줄 번호가 겹치지 않게 분리
+        const staveHeight = 165;
         const totalRows = Math.ceil(song.measures.length / measuresPerRow);
 
         const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
@@ -571,7 +573,8 @@
           const col = idx % measuresPerRow;
           const row = Math.floor(idx / measuresPerRow);
           const x = 10 + col * staveWidth;
-          const y = 20 + row * staveHeight;
+          // y 좌표 시작점
+          const y = 15 + row * staveHeight;
 
           const stave = new VF.TabStave(x, y, staveWidth);
           if (col === 0) {
@@ -579,8 +582,11 @@
           }
           stave.setContext(context).draw();
 
-          context.setFont("sans-serif", 9, "bold");
-          context.fillText(`[${idx + 1}]`, x + (col === 0 ? 30 : 6), y - 4);
+          // [핵심 수정 1]: 6선의 실제 1번 줄(상단 선) y좌표를 측정하여 그 바로 6px 위에 마디 번호 밀착 배치
+          const topLineY = stave.getYForLine(0);
+          context.setFont("sans-serif", 10, "bold");
+          context.setFillStyle("#1e293b");
+          context.fillText(`[${idx + 1}]`, x + (col === 0 ? 32 : 6), topLineY - 6);
 
           const parsed = parse16StepsToNotes(m.steps);
           const notes = parsed.map(item => {
@@ -599,9 +605,10 @@
               duration: item.duration
             });
 
+            // [핵심 수정 2]: 가사 폰트 크기 및 하단 정렬 최적화
             if (item.lyric) {
               const annotation = new VF.Annotation(item.lyric)
-                .setFont("sans-serif", 10, "normal")
+                .setFont("sans-serif", 11, "normal")
                 .setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM);
               tabNote.addModifier(annotation, 0);
             }
