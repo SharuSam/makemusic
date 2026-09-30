@@ -282,7 +282,7 @@
       color: #0369a1;
     }
 
-    /* [새 기능]: 상단 자유 코드(Chord) 입력 행 */
+    /* 상단 코드(Chord) 입력 행 */
     .chord-title-td {
       background: #f0fdf4;
       color: #15803d;
@@ -329,15 +329,16 @@
       font-family: monospace;
       padding-left: 8px;
       border-right: 2px solid #64748b;
-      height: 34px;
+      height: 38px;
     }
     .slot-cell {
       position: relative;
-      height: 34px;
+      height: 38px;
       cursor: pointer;
       border-right: 1px dashed #e2e8f0;
       text-align: center;
       padding: 0;
+      vertical-align: middle;
       transition: background 0.1s;
     }
     .slot-cell.beat-start-td {
@@ -360,37 +361,51 @@
     .string-row-5 .string-line { height: 2px; background: #475569; }
     .string-row-6 .string-line { height: 2.5px; background: #334155; }
 
-    /* 찍힌 프렛 뱃지 */
-    .fret-badge {
+    /* [핵심 기능]: 타브를 찍으면 프렛 번호를 바로 작성하는 인라인 프렛 입력 인풋 */
+    .inline-fret-input {
       position: relative;
-      z-index: 2;
-      width: 22px;
-      height: 22px;
+      z-index: 3;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
+      border: 1px solid transparent;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      background: transparent;
+      color: #64748b;
+      outline: none;
+      transition: all 0.15s ease;
+      margin: 0 auto;
+      display: block;
+      padding: 0;
+      cursor: text;
+    }
+    .inline-fret-input:hover {
+      background: rgba(37, 99, 235, 0.12);
+      border-color: #93c5fd;
+    }
+    .inline-fret-input:focus {
+      background: #ffffff;
+      color: #1e293b;
+      border: 2px solid #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    /* 숫자가 입력되어 있는 상태의 프렛 뱃지 스타일 */
+    .inline-fret-input.has-fret {
       background: #1e293b;
       color: #ffffff;
-      font-size: 11px;
-      font-weight: 800;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
       border: 1px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
     }
-    .fret-badge.fret-mute {
-      background: #dc2626;
+    .inline-fret-input.has-fret:focus {
+      background: #2563eb;
+      border-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
     }
-    .slot-cell:hover::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: rgba(37, 99, 235, 0.35);
-      z-index: 2;
+    .inline-fret-input.has-mute {
+      background: #dc2626 !important;
+      color: #ffffff !important;
     }
 
     /* 가사 입력 행 */
@@ -523,7 +538,6 @@
 
     const PALETTE_FRETS = ["0", "1", "2", "3", "4", "5", "7", "8", "9", "10", "12", "15", "X", "DEL"];
 
-    // 각 슬롯 생성: chord(원하는 위치에 자유 입력), strings(프렛), lyric(가사)
     const createSlot = () => ({ chord: "", strings: {}, lyric: "" });
 
     function createBeat(type = "4") {
@@ -540,7 +554,6 @@
     }
 
     const createInitialMeasures = () => {
-      // 마디 1: 1박에 Am 코드, 3박에 G 코드 (원하는 박자 위치에 자유 배치)
       const m1 = {
         id: 1,
         beats: [
@@ -563,7 +576,6 @@
       m1.beats[3].slots[2].strings[5] = "3";
       m1.beats[3].slots[3].strings[6] = "3";
 
-      // 마디 2: 1박에 C, 2박에 D7, 3박에 G
       const m2 = {
         id: 2,
         beats: [
@@ -582,7 +594,6 @@
       m2.beats[2].slots[0].chord = "G";
       m2.beats[2].slots[0].strings[1] = "3"; m2.beats[2].slots[0].strings[6] = "3"; m2.beats[2].slots[0].lyric = "연습";
 
-      // 마디 3: F, G, C
       const m3 = {
         id: 3,
         beats: [
@@ -602,7 +613,6 @@
       m3.beats[3].slots[0].strings[4] = "2"; m3.beats[3].slots[0].lyric = "로";
       m3.beats[3].slots[1].strings[5] = "3";
 
-      // 마디 4: E7
       const m4 = {
         id: 4,
         beats: [
@@ -773,7 +783,7 @@
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
       };
 
-      // [원하는 위치에 코드 입력]
+      // 코드 입력
       const handleSlotChordChange = (mIdx, bIdx, slotIdx, val) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -782,6 +792,7 @@
         });
       };
 
+      // 리듬 변경
       const handleRhythmChange = (mIdx, bIdx, newType) => {
         setSong(prev => {
           const nextMeasures = [...prev.measures];
@@ -790,31 +801,50 @@
         });
       };
 
-      const handleSlotClick = (mIdx, bIdx, slotIdx, strNum) => {
+      // [핵심 기능 1]: 타브 현을 찍었을 때 인라인으로 프렛 번호 바로 작성 & 소리 재생
+      const handleInlineFretChange = (mIdx, bIdx, slotIdx, strNum, val) => {
+        const clean = val.trim().toUpperCase();
         setSong(prev => {
           const nextMeasures = [...prev.measures];
           const currentStrings = { ...nextMeasures[mIdx].beats[bIdx].slots[slotIdx].strings };
 
-          if (selectedFret === "DEL") {
+          if (clean === "" || clean === "-") {
             delete currentStrings[strNum];
           } else {
-            if (currentStrings[strNum] === selectedFret) {
-              delete currentStrings[strNum];
-            } else {
-              currentStrings[strNum] = selectedFret;
-              if (audioCtxRef.current) {
-                const fNum = parseInt(selectedFret, 10);
-                if (!isNaN(fNum)) {
-                  const freq = BASE_FREQS[strNum] * Math.pow(2, fNum / 12);
-                  playGuitarNote(audioCtxRef.current, freq, 0.4);
-                }
-              }
+            currentStrings[strNum] = clean;
+            // 프렛 번호 입력 즉시 기타 소리 재생
+            if (!audioCtxRef.current) {
+              const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+              audioCtxRef.current = new AudioContextClass();
+            }
+            if (audioCtxRef.current.state === "suspended") {
+              audioCtxRef.current.resume();
+            }
+            const fNum = parseInt(clean, 10);
+            if (!isNaN(fNum)) {
+              const freq = BASE_FREQS[strNum] * Math.pow(2, fNum / 12);
+              playGuitarNote(audioCtxRef.current, freq, 0.45);
             }
           }
 
           nextMeasures[mIdx].beats[bIdx].slots[slotIdx].strings = currentStrings;
           return { ...prev, measures: nextMeasures };
         });
+      };
+
+      // [핵심 기능 2]: 방향키(상하좌우), Tab, Enter, Backspace로 타브를 넘나들며 바로 연속 작성
+      const handleFretKeyDown = (e, mIdx, bIdx, sIdx, strNum) => {
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (strNum > 1) {
+            document.getElementById(`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum - 1}`)?.focus();
+          }
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (strNum < 6) {
+            document.getElementById(`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum + 1}`)?.focus();
+          }
+        }
       };
 
       const handleLyricChange = (mIdx, bIdx, slotIdx, val) => {
@@ -825,7 +855,7 @@
         });
       };
 
-      // VexFlow 렌더링: 각 음표별 상단에 코드 Annotation 배치
+      // VexFlow 렌더링
       useEffect(() => {
         if (!scoreRef.current) return;
         const container = scoreRef.current;
@@ -880,7 +910,6 @@
                 duration: isNote ? "h" : "hr"
               });
 
-              // 해당 위치에 코드가 있으면 상단(TOP)에 표기
               if (slot.chord && slot.chord.trim() !== "") {
                 tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
               }
@@ -1040,8 +1069,9 @@
               </div>
             </div>
 
+            {/* 빠른 프렛 팔레트 */}
             <div className="palette-box">
-              <span className="palette-title">📌 찍을 프렛 번호 선택:</span>
+              <span className="palette-title">📌 빠른 프렛 버튼:</span>
               {PALETTE_FRETS.map(fret => (
                 <button
                   key={fret}
@@ -1069,7 +1099,7 @@
               </div>
               <div className="btn-group-right">
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  💡 6선지 바로 위 <strong>[코드 행]</strong>에서 각 박자/음표마다 원하는 코드를 자유롭게 입력하실 수 있습니다.
+                  💡 <strong>타브 선 위를 클릭하면 프렛 번호를 키보드로 바로 타이핑</strong>할 수 있으며, 방향키(↑, ↓)로 줄을 이동할 수 있습니다.
                 </span>
               </div>
             </div>
@@ -1079,7 +1109,7 @@
               <div key={m.id} className="measure-box">
                 <div className="measure-header">
                   <span className="measure-title">마디 #{mIdx + 1}</span>
-                  <span className="measure-hint">💡 각 칸마다 개별 코드와 가사를 입력할 수 있습니다.</span>
+                  <span className="measure-hint">💡 타브 선 위의 동그라미를 클릭하고 0~24 숫자를 바로 입력하세요.</span>
                 </div>
 
                 {/* 박자별 리듬(음가) 선택 컨트롤 바 */}
@@ -1104,7 +1134,7 @@
                   ))}
                 </div>
 
-                {/* 6선지 직접 찍기 인터랙티브 스태프 (상단 코드행 + 6현 + 하단 가사행) */}
+                {/* 6선지 직접 찍기 & 바로 타이핑 에디터 */}
                 <div className="staff-container">
                   <table className="staff-table">
                     <thead>
@@ -1126,7 +1156,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {/* [새 기능]: 원하는 위치에 자유롭게 입력하는 코드(Chord) 행 */}
+                      {/* 코드 입력 행 */}
                       <tr>
                         <td className="chord-title-td">코드 (Chord)</td>
                         {m.beats.map((beat, bIdx) =>
@@ -1145,7 +1175,7 @@
                         )}
                       </tr>
 
-                      {/* 6선지 현 (프렛 번호 찍기) */}
+                      {/* 6선지 현 (클릭 시 프렛 번호 바로 직접 작성) */}
                       {STRINGS.map(str => (
                         <tr key={str.num} className={`string-row string-row-${str.num}`}>
                           <td className="str-label-td">{str.label}</td>
@@ -1154,19 +1184,27 @@
                               const fretVal = slot.strings[str.num];
                               const slotKey = `${mIdx}-${bIdx}-${sIdx}`;
                               const isSlotPlaying = playingSlotKey === slotKey;
+                              const inputId = `fret-in-${mIdx}-${bIdx}-${sIdx}-${str.num}`;
+                              const hasFret = fretVal !== undefined && fretVal !== "";
+
                               return (
                                 <td
                                   key={`${bIdx}-${sIdx}`}
                                   className={`slot-cell ${sIdx === 0 ? "beat-start-td" : ""} ${isSlotPlaying ? "playing-slot" : ""}`}
-                                  onClick={() => handleSlotClick(mIdx, bIdx, sIdx, str.num)}
-                                  title={`${bIdx + 1}박 ${sIdx + 1}번째 / ${str.label}`}
+                                  onClick={() => document.getElementById(inputId)?.focus()}
                                 >
                                   <div className="string-line"></div>
-                                  {fretVal !== undefined && fretVal !== "" && (
-                                    <div className={`fret-badge ${fretVal === "X" ? "fret-mute" : ""}`}>
-                                      {fretVal}
-                                    </div>
-                                  )}
+                                  <input
+                                    id={inputId}
+                                    className={`inline-fret-input ${hasFret ? "has-fret" : ""} ${fretVal === "X" ? "has-mute" : ""}`}
+                                    value={fretVal || ""}
+                                    placeholder="·"
+                                    maxLength={2}
+                                    onChange={e => handleInlineFretChange(mIdx, bIdx, sIdx, str.num, e.target.value)}
+                                    onKeyDown={e => handleFretKeyDown(e, mIdx, bIdx, sIdx, str.num)}
+                                    onFocus={e => e.target.select()}
+                                    title={`${str.label} / ${bIdx + 1}박 ${sIdx + 1}번째 프렛 번호 입력`}
+                                  />
                                 </td>
                               );
                             })
@@ -1199,7 +1237,7 @@
             ))}
           </div>
 
-          {/* A4 악보 용지 영역 (인쇄 대상: 한 줄에 4마디 정렬, 각 음표별 상단에 코드 자동 안착) */}
+          {/* A4 악보 용지 영역 */}
           <div className="sheet-wrapper">
             <div className="a4-sheet">
               <div className="sheet-header">
