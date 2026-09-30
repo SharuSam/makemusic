@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>일렉기타 타브 & 가사 에디터</title>
+  <title>일렉기타 타브(TAB) & 가사 에디터 (4마디/16분음표 6선지 직접찍기)</title>
   
+  <!-- CDN Libraries -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -16,29 +17,33 @@
       font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       background-color: #f1f5f9;
       color: #0f172a;
-      padding: 24px;
+      padding: 20px;
     }
-    .app-container { max-width: 960px; margin: 0 auto; }
+    .app-container { max-width: 1040px; margin: 0 auto; }
+    
+    /* 편집 패널 */
     .editor-card {
       background: #ffffff;
       padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
       margin-bottom: 24px;
     }
     .card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
     .card-top h2 {
       font-size: 20px;
+      font-weight: 800;
       color: #1e293b;
       display: flex;
       align-items: center;
       gap: 8px;
     }
+    
     .meta-grid {
       display: grid;
       grid-template-columns: 2fr 1.5fr 1.5fr 1fr;
@@ -64,6 +69,62 @@
       border-color: #2563eb;
       box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
     }
+
+    /* 프렛 번호 팔레트 (직접 찍기용) */
+    .palette-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .palette-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      margin-right: 6px;
+    }
+    .fret-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .fret-btn:hover { background: #e2e8f0; }
+    .fret-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #1d4ed8;
+      box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+    }
+    .fret-btn.eraser.active {
+      background: #dc2626;
+      border-color: #b91c1c;
+      color: white;
+    }
+    .custom-fret-input {
+      width: 50px;
+      height: 32px;
+      text-align: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
     .toolbar {
       display: flex;
       gap: 8px;
@@ -73,7 +134,7 @@
       cursor: pointer;
       font-size: 14px;
       font-weight: 600;
-      padding: 9px 18px;
+      padding: 9px 16px;
       border-radius: 6px;
       border: none;
       transition: all 0.2s;
@@ -85,75 +146,197 @@
     .btn-del { background: #fee2e2; color: #dc2626; }
     .btn-del:hover { background: #fecaca; }
 
+    /* 직관적인 6선지 인터랙티브 마디 */
     .measure-box {
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 16px;
-      margin-bottom: 16px;
-      background: #fafafa;
-    }
-    .measure-box h4 {
-      font-size: 14px;
-      font-weight: 700;
-      color: #334155;
-      margin-bottom: 10px;
-    }
-    .tab-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-    }
-    .tab-table th, .tab-table td {
-      border: 1px solid #cbd5e1;
-      text-align: center;
-      padding: 4px;
-    }
-    .tab-table th {
-      background: #f1f5f9;
-      font-size: 12px;
-      color: #475569;
-    }
-    .str-header { width: 140px; text-align: left !important; padding-left: 10px !important; font-weight: 600; }
-    .fret-cell input {
-      width: 100%;
-      border: 1px solid transparent;
-      padding: 6px 0;
-      font-size: 15px;
-      font-family: monospace;
-      font-weight: 700;
-      text-align: center;
-      background: transparent;
-      outline: none;
-    }
-    .fret-cell input:focus {
+      margin-bottom: 20px;
       background: #ffffff;
-      border-color: #2563eb;
-      outline: 2px solid #2563eb;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-    .lyric-row {
-      background: #fefce8;
+    .measure-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
     }
-    .lyric-header {
+    .measure-title {
+      font-size: 15px;
       font-weight: 700;
-      color: #854d0e;
-      text-align: left !important;
-      padding-left: 10px !important;
+      color: #1e293b;
+    }
+    .measure-hint {
       font-size: 12px;
+      color: #64748b;
+    }
+
+    /* 6선지 스태프 영역 */
+    .staff-container {
+      position: relative;
+      background: #fafafa;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 0 6px 0;
+      overflow-x: auto;
+    }
+    .staff-grid {
+      display: grid;
+      grid-template-columns: 100px repeat(16, minmax(36px, 1fr));
+      width: 100%;
+    }
+    
+    /* 박자 헤더 (1박, 2박, 3박, 4박 / 1/16분할) */
+    .beat-header-row {
+      display: contents;
+    }
+    .beat-label-corner {
+      background: #f1f5f9;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      border-bottom: 2px solid #94a3b8;
+    }
+    .beat-col-header {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      padding: 4px 0;
+      background: #f1f5f9;
+      border-bottom: 2px solid #94a3b8;
+      border-right: 1px dashed #cbd5e1;
+    }
+    .beat-col-header.beat-start {
+      border-left: 2px solid #3b82f6;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+    }
+
+    /* 기타 6줄 행 */
+    .string-row {
+      display: contents;
+    }
+    .string-info {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #334155;
+      background: #f8fafc;
+      border-right: 2px solid #64748b;
+      position: relative;
+    }
+    .string-cell {
+      height: 34px;
+      position: relative;
+      cursor: pointer;
+      border-right: 1px dashed #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .string-cell.beat-start {
+      border-left: 2px solid #e0f2fe;
+    }
+    .string-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background: #94a3b8;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .string-row-4 .string-line { height: 1.5px; background: #64748b; }
+    .string-row-5 .string-line { height: 2px; background: #475569; }
+    .string-row-6 .string-line { height: 2.5px; background: #334155; }
+
+    /* 찍힌 프렛 뱃지 */
+    .fret-badge {
+      position: relative;
+      z-index: 2;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      border: 1px solid #ffffff;
+      transition: transform 0.1s;
+    }
+    .fret-badge:hover {
+      transform: scale(1.15);
+      background: #2563eb;
+    }
+    .fret-badge.fret-mute {
+      background: #dc2626;
+    }
+
+    .string-cell:hover::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.35);
+      z-index: 2;
+    }
+
+    /* 가사 입력 행 (16분할) */
+    .lyric-staff-row {
+      display: contents;
+    }
+    .lyric-title {
+      background: #fefce8;
+      color: #854d0e;
+      font-weight: 700;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      border-right: 2px solid #ca8a04;
+      border-top: 2px solid #ca8a04;
+    }
+    .lyric-cell {
+      background: #fefce8;
+      border-top: 2px solid #ca8a04;
+      border-right: 1px dashed #fef08a;
+      padding: 4px 1px;
+    }
+    .lyric-cell.beat-start {
+      border-left: 2px solid #fef08a;
     }
     .lyric-cell input {
       width: 100%;
       border: 1px solid transparent;
-      padding: 6px 0;
-      font-size: 13px;
+      border-radius: 4px;
       text-align: center;
+      font-size: 11px;
+      padding: 4px 0;
       background: transparent;
       outline: none;
     }
     .lyric-cell input:focus {
       background: #ffffff;
-      outline: 2px solid #ca8a04;
+      border-color: #ca8a04;
+      box-shadow: 0 0 0 1px #ca8a04;
     }
 
+    /* A4 악보 용지 영역 */
     .sheet-wrapper {
       display: flex;
       justify-content: center;
@@ -162,26 +345,26 @@
       background: white;
       width: 794px;
       min-height: 1123px;
-      padding: 40px;
+      padding: 35px 25px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       box-sizing: border-box;
     }
     .sheet-header {
       text-align: center;
       border-bottom: 2px solid #0f172a;
-      padding-bottom: 14px;
-      margin-bottom: 20px;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
     }
     .sheet-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 800;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       letter-spacing: -0.5px;
     }
     .sheet-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 13px;
+      font-size: 12px;
       color: #334155;
     }
     .score-view svg {
@@ -189,9 +372,10 @@
       margin: 0 auto;
     }
 
+    /* A4 인쇄 최적화 - 한 줄에 4마디 꽉 채우기 */
     @page {
       size: A4 portrait;
-      margin: 12mm 15mm;
+      margin: 10mm 12mm;
     }
     @media print {
       body {
@@ -215,6 +399,7 @@
       }
       .score-view svg {
         page-break-inside: avoid;
+        width: 100% !important;
       }
     }
   </style>
@@ -226,61 +411,102 @@
     const { useState, useEffect, useRef } = React;
 
     const STRINGS = [
-      { num: 1, label: "1번줄 (High E)" },
-      { num: 2, label: "2번줄 (B)" },
-      { num: 3, label: "3번줄 (G)" },
-      { num: 4, label: "4번줄 (D)" },
-      { num: 5, label: "5번줄 (A)" },
-      { num: 6, label: "6번줄 (Low E)" }
+      { num: 1, label: "1 (High E)" },
+      { num: 2, label: "2 (B)" },
+      { num: 3, label: "3 (G)" },
+      { num: 4, label: "4 (D)" },
+      { num: 5, label: "5 (A)" },
+      { num: 6, label: "6 (Low E)" }
     ];
 
+    const PALETTE_FRETS = ["0", "1", "2", "3", "4", "5", "7", "8", "9", "10", "12", "15", "X", "DEL"];
+
+    const createEmptySteps = () => Array.from({ length: 16 }, () => ({
+      strings: {},
+      lyric: ""
+    }));
+
+    const createInitialMeasures = () => {
+      const m1 = createEmptySteps();
+      m1[0].strings[3] = "0"; m1[0].lyric = "시-";
+      m1[4].strings[3] = "3"; m1[4].lyric = "작-";
+      m1[8].strings[3] = "5"; m1[8].lyric = "하-";
+      m1[12].strings[3] = "0"; m1[12].lyric = "는";
+
+      const m2 = createEmptySteps();
+      m2[0].strings[3] = "3"; m2[0].lyric = "타-";
+      m2[4].strings[3] = "6"; m2[4].lyric = "브-";
+      m2[8].strings[3] = "5"; m2[8].lyric = "연-";
+      m2[12].strings[3] = "3"; m2[12].lyric = "습";
+
+      const m3 = createEmptySteps();
+      m3[0].strings[1] = "0"; m3[0].strings[2] = "1"; m3[0].strings[3] = "2"; m3[0].lyric = "Am";
+      m3[6].strings[2] = "1"; m3[6].lyric = "코-";
+      m3[8].strings[1] = "3"; m3[8].strings[2] = "0"; m3[8].strings[3] = "0"; m3[8].lyric = "G";
+      m3[14].strings[2] = "0"; m3[14].lyric = "드";
+
+      const m4 = createEmptySteps();
+      m4[0].strings[1] = "1"; m4[0].strings[2] = "1"; m4[0].strings[3] = "2"; m4[0].lyric = "F";
+      m4[6].strings[3] = "2"; m4[6].lyric = "솔-";
+      m4[8].strings[1] = "0"; m4[8].strings[2] = "0"; m4[8].strings[3] = "1"; m4[8].lyric = "E";
+      m4[14].strings[3] = "0"; m4[14].lyric = "로";
+
+      return [
+        { id: 1, steps: m1 },
+        { id: 2, steps: m2 },
+        { id: 3, steps: m3 },
+        { id: 4, steps: m4 }
+      ];
+    };
+
     const INITIAL_SONG = {
-      title: "기타 타브 & 가사 악보 (연습곡)",
+      title: "일렉기타 타브 & 가사 악보 (16분음표 4마디 정렬)",
       artist: "연주자",
       tuning: "Standard (E A D G B E)",
       tempo: "120",
-      measures: [
-        {
-          id: 1,
-          beats: [
-            { strings: { 1: "", 2: "", 3: "0", 4: "", 5: "", 6: "" }, lyric: "시-" },
-            { strings: { 1: "", 2: "", 3: "3", 4: "", 5: "", 6: "" }, lyric: "작-" },
-            { strings: { 1: "", 2: "", 3: "5", 4: "", 5: "", 6: "" }, lyric: "하-" },
-            { strings: { 1: "", 2: "", 3: "0", 4: "", 5: "", 6: "" }, lyric: "는" }
-          ]
-        },
-        {
-          id: 2,
-          beats: [
-            { strings: { 1: "", 2: "", 3: "3", 4: "", 5: "", 6: "" }, lyric: "타-" },
-            { strings: { 1: "", 2: "", 3: "6", 4: "", 5: "", 6: "" }, lyric: "브-" },
-            { strings: { 1: "", 2: "", 3: "5", 4: "", 5: "", 6: "" }, lyric: "연-" },
-            { strings: { 1: "", 2: "", 3: "", 4: "", 5: "", 6: "" }, lyric: "습" }
-          ]
-        },
-        {
-          id: 3,
-          beats: [
-            { strings: { 1: "0", 2: "1", 3: "2", 4: "2", 5: "0", 6: "" }, lyric: "Am" },
-            { strings: { 1: "", 2: "1", 3: "", 4: "", 5: "", 6: "" }, lyric: "코-" },
-            { strings: { 1: "3", 2: "0", 3: "0", 4: "0", 5: "2", 6: "3" }, lyric: "G" },
-            { strings: { 1: "", 2: "0", 3: "", 4: "", 5: "", 6: "" }, lyric: "드" }
-          ]
-        },
-        {
-          id: 4,
-          beats: [
-            { strings: { 1: "1", 2: "1", 3: "2", 4: "3", 5: "3", 6: "1" }, lyric: "F" },
-            { strings: { 1: "", 2: "", 3: "2", 4: "", 5: "", 6: "" }, lyric: "솔-" },
-            { strings: { 1: "0", 2: "0", 3: "1", 4: "2", 5: "2", 6: "0" }, lyric: "E" },
-            { strings: { 1: "", 2: "", 3: "", 4: "", 5: "", 6: "" }, lyric: "로" }
-          ]
-        }
-      ]
+      measures: createInitialMeasures()
     };
+
+    function parse16StepsToNotes(steps) {
+      const result = [];
+      for (let b = 0; b < 4; b++) {
+        const beatSteps = steps.slice(b * 4, b * 4 + 4);
+        const hasAny = beatSteps.some(s => Object.keys(s.strings || {}).some(k => s.strings[k] !== undefined && s.strings[k] !== ""));
+        
+        if (!hasAny) {
+          result.push({ isRest: true, duration: "qr", subIndex: b * 4, lyric: beatSteps[0].lyric });
+          continue;
+        }
+
+        let i = 0;
+        while (i < 4) {
+          const s = beatSteps[i];
+          const isNote = Object.keys(s.strings || {}).some(k => s.strings[k] !== undefined && s.strings[k] !== "");
+          let len = 1;
+          while (i + len < 4 && !Object.keys(beatSteps[i + len].strings || {}).some(k => beatSteps[i + len].strings[k] !== "")) {
+            len++;
+          }
+          let dur = "16";
+          if (len === 4) dur = "q";
+          else if (len === 3) dur = "8d";
+          else if (len === 2) dur = "8";
+          else dur = "16";
+
+          if (isNote) {
+            result.push({ isRest: false, step: s, duration: dur, subIndex: b * 4 + i, lyric: s.lyric });
+          } else {
+            result.push({ isRest: true, duration: dur + "r", subIndex: b * 4 + i, lyric: s.lyric });
+          }
+          i += len;
+        }
+      }
+      return result;
+    }
 
     function App() {
       const [song, setSong] = useState(INITIAL_SONG);
+      const [selectedFret, setSelectedFret] = useState("0");
+      const [customFret, setCustomFret] = useState("");
       const scoreRef = useRef(null);
 
       const addMeasure = () => {
@@ -288,13 +514,7 @@
           ...prev,
           measures: [
             ...prev.measures,
-            {
-              id: Date.now(),
-              beats: Array.from({ length: 4 }, () => ({
-                strings: { 1: "", 2: "", 3: "", 4: "", 5: "", 6: "" },
-                lyric: ""
-              }))
-            }
+            { id: Date.now(), steps: createEmptySteps() }
           ]
         }));
       };
@@ -304,19 +524,31 @@
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
       };
 
-      const updateFret = (mIdx, bIdx, strNum, val) => {
+      const handleCellClick = (mIdx, stepIdx, strNum) => {
         setSong(prev => {
-          const measures = [...prev.measures];
-          measures[mIdx].beats[bIdx].strings[strNum] = val.trim();
-          return { ...prev, measures };
+          const nextMeasures = [...prev.measures];
+          const currentStrings = { ...nextMeasures[mIdx].steps[stepIdx].strings };
+
+          if (selectedFret === "DEL") {
+            delete currentStrings[strNum];
+          } else {
+            if (currentStrings[strNum] === selectedFret) {
+              delete currentStrings[strNum];
+            } else {
+              currentStrings[strNum] = selectedFret;
+            }
+          }
+
+          nextMeasures[mIdx].steps[stepIdx].strings = currentStrings;
+          return { ...prev, measures: nextMeasures };
         });
       };
 
-      const updateLyric = (mIdx, bIdx, val) => {
+      const handleLyricChange = (mIdx, stepIdx, val) => {
         setSong(prev => {
-          const measures = [...prev.measures];
-          measures[mIdx].beats[bIdx].lyric = val;
-          return { ...prev, measures };
+          const nextMeasures = [...prev.measures];
+          nextMeasures[mIdx].steps[stepIdx].lyric = val;
+          return { ...prev, measures: nextMeasures };
         });
       };
 
@@ -326,9 +558,9 @@
         container.innerHTML = "";
 
         const VF = Vex.Flow;
-        const measuresPerRow = 2;
-        const staveWidth = 350;
-        const staveHeight = 150;
+        const measuresPerRow = 4;
+        const staveWidth = 175;
+        const staveHeight = 140;
         const totalRows = Math.ceil(song.measures.length / measuresPerRow);
 
         const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
@@ -342,31 +574,38 @@
           const y = 20 + row * staveHeight;
 
           const stave = new VF.TabStave(x, y, staveWidth);
-          if (col === 0) stave.addClef("tab");
+          if (col === 0) {
+            stave.addClef("tab");
+          }
           stave.setContext(context).draw();
 
-          context.setFont("sans-serif", 10, "bold");
-          context.fillText(`[${idx + 1}]`, x + 5, y - 5);
+          context.setFont("sans-serif", 9, "bold");
+          context.fillText(`[${idx + 1}]`, x + (col === 0 ? 30 : 6), y - 4);
 
-          const notes = m.beats.map(beat => {
+          const parsed = parse16StepsToNotes(m.steps);
+          const notes = parsed.map(item => {
             const positions = [];
-            for (let s = 1; s <= 6; s++) {
-              if (beat.strings[s] !== undefined && beat.strings[s] !== "") {
-                positions.push({ str: s, fret: beat.strings[s] });
+            if (!item.isRest && item.step) {
+              for (let s = 1; s <= 6; s++) {
+                const fret = item.step.strings[s];
+                if (fret !== undefined && fret !== "") {
+                  positions.push({ str: s, fret: fret });
+                }
               }
             }
 
             const tabNote = new VF.TabNote({
-              positions: positions.length > 0 ? positions : [{ str: 3, fret: "X" }],
-              duration: "q"
+              positions: positions.length > 0 ? positions : [{ str: 3, fret: "" }],
+              duration: item.duration
             });
 
-            if (beat.lyric) {
-              const annotation = new VF.Annotation(beat.lyric)
-                .setFont("sans-serif", 12, "normal")
+            if (item.lyric) {
+              const annotation = new VF.Annotation(item.lyric)
+                .setFont("sans-serif", 10, "normal")
                 .setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM);
               tabNote.addModifier(annotation, 0);
             }
+
             return tabNote;
           });
 
@@ -380,7 +619,7 @@
             <div className="card-top">
               <h2>🎸 일렉기타 타브 & 가사 에디터</h2>
               <button className="btn-print" onClick={() => window.print()}>
-                🖨️ A4 악보 출력하기
+                🖨️ A4 악보 출력하기 (4마디/줄)
               </button>
             </div>
 
@@ -403,6 +642,28 @@
               </div>
             </div>
 
+            <div className="palette-box">
+              <span className="palette-title">📌 찍을 프렛 번호 선택:</span>
+              {PALETTE_FRETS.map(fret => (
+                <button
+                  key={fret}
+                  className={`fret-btn ${fret === "DEL" ? "eraser" : ""} ${selectedFret === fret ? "active" : ""}`}
+                  onClick={() => setSelectedFret(fret)}
+                >
+                  {fret === "DEL" ? "지우개" : fret}
+                </button>
+              ))}
+              <input
+                className="custom-fret-input"
+                placeholder="직접"
+                value={customFret}
+                onChange={e => {
+                  setCustomFret(e.target.value);
+                  if (e.target.value.trim() !== "") setSelectedFret(e.target.value.trim());
+                }}
+              />
+            </div>
+
             <div className="toolbar">
               <button className="btn-add" onClick={addMeasure}>➕ 마디 추가</button>
               <button className="btn-del" onClick={removeMeasure}>➖ 마지막 마디 삭제</button>
@@ -410,43 +671,66 @@
 
             {song.measures.map((m, mIdx) => (
               <div key={m.id} className="measure-box">
-                <h4>마디 #{mIdx + 1}</h4>
-                <table className="tab-table">
-                  <thead>
-                    <tr>
-                      <th className="str-header">줄 (String)</th>
-                      {m.beats.map((_, bIdx) => <th key={bIdx}>{bIdx + 1}박</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
+                <div className="measure-header">
+                  <span className="measure-title">마디 #{mIdx + 1} (4/4박자 - 16분음표 분할)</span>
+                  <span className="measure-hint">💡 6선지 위의 원하는 박자 위치를 클릭하면 선택된 프렛({selectedFret})이 찍힙니다.</span>
+                </div>
+
+                <div className="staff-container">
+                  <div className="staff-grid">
+                    <div className="beat-header-row">
+                      <div className="beat-label-corner">줄 \ 박자</div>
+                      {Array.from({ length: 16 }, (_, i) => {
+                        const beatNum = Math.floor(i / 4) + 1;
+                        const sub = (i % 4) + 1;
+                        const isStart = i % 4 === 0;
+                        return (
+                          <div key={i} className={`beat-col-header ${isStart ? "beat-start" : ""}`}>
+                            {isStart ? `${beatNum}박` : `.${sub}`}
+                          </div>
+                        );
+                      })}
+                    </div>
+
                     {STRINGS.map(str => (
-                      <tr key={str.num}>
-                        <td className="str-header">{str.label}</td>
-                        {m.beats.map((b, bIdx) => (
-                          <td key={bIdx} className="fret-cell">
-                            <input
-                              placeholder="-"
-                              value={b.strings[str.num] || ""}
-                              onChange={e => updateFret(mIdx, bIdx, str.num, e.target.value)}
-                            />
-                          </td>
-                        ))}
-                      </tr>
+                      <div key={str.num} className={`string-row string-row-${str.num}`}>
+                        <div className="string-info">{str.label}</div>
+                        {m.steps.map((step, stepIdx) => {
+                          const fretVal = step.strings[str.num];
+                          const isStart = stepIdx % 4 === 0;
+                          return (
+                            <div
+                              key={stepIdx}
+                              className={`string-cell ${isStart ? "beat-start" : ""}`}
+                              onClick={() => handleCellClick(mIdx, stepIdx, str.num)}
+                              title={`${str.label} / ${stepIdx + 1}번째 16분박 클릭`}
+                            >
+                              <div className="string-line"></div>
+                              {fretVal !== undefined && fretVal !== "" && (
+                                <div className={`fret-badge ${fretVal === "X" ? "fret-mute" : ""}`}>
+                                  {fretVal}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     ))}
-                    <tr className="lyric-row">
-                      <td className="lyric-header">가사 (Lyrics)</td>
-                      {m.beats.map((b, bIdx) => (
-                        <td key={bIdx} className="lyric-cell">
+
+                    <div className="lyric-staff-row">
+                      <div className="lyric-title">가사</div>
+                      {m.steps.map((step, stepIdx) => (
+                        <div key={stepIdx} className={`lyric-cell ${stepIdx % 4 === 0 ? "beat-start" : ""}`}>
                           <input
-                            placeholder="가사"
-                            value={b.lyric || ""}
-                            onChange={e => updateLyric(mIdx, bIdx, e.target.value)}
+                            placeholder=""
+                            value={step.lyric || ""}
+                            onChange={e => handleLyricChange(mIdx, stepIdx, e.target.value)}
                           />
-                        </td>
+                        </div>
                       ))}
-                    </tr>
-                  </tbody>
-                </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -459,6 +743,7 @@
                   <span><strong>Artist:</strong> {song.artist}</span>
                   <span><strong>Tuning:</strong> {song.tuning}</span>
                   <span><strong>Tempo:</strong> ♩={song.tempo}</span>
+                  <span><strong>Layout:</strong> 4 Measures / Line</span>
                 </div>
               </div>
               <div ref={scoreRef} className="score-view" />
