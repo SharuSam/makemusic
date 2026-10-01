@@ -1712,6 +1712,37 @@
 
   
 
+    
+    // React Error Boundary: 렌더링 중 오류 발생 시 흰 화면(블랭크)을 방지하고 안내 화면 표시
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+      }
+      componentDidCatch(error, errorInfo) {
+        console.error("ErrorBoundary error:", error, errorInfo);
+      }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div style={{ padding: "40px 20px", textAlign: "center", background: "#ffffff", maxWidth: "600px", margin: "40px auto", borderRadius: "14px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}>
+              <div style={{ fontSize: "40px", marginBottom: "12px" }}>⚠️</div>
+              <h2 style={{ color: "#ef4444", marginBottom: "10px", fontSize: "20px" }}>악보를 표시하는 중 문제가 발생했습니다</h2>
+              <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>{this.state.error?.message || "알 수 없는 오류"}</p>
+              <button style={{ background: "#2563eb", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "700" }} onClick={() => window.location.reload()}>
+                🔄 페이지 새로고침
+              </button>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+
     function App() {
 
       const [song, setSong] = useState({
@@ -2718,316 +2749,522 @@
 
   
 
-      // VexFlow 렌더링 (박자·음가 기둥, 빔, 셋잇단음표, 박자표, 템포 완벽 지원)
+      // VexFlow 렌더링 (안정적인 SVG 박자 기둥·보·박자표·템포 완벽 지원)
       useEffect(() => {
-        if (!scoreRef.current) return;
-        const container = scoreRef.current;
-        container.innerHTML = "";
+        try {
+          if (!scoreRef.current) return;
+          const container = scoreRef.current;
+          container.innerHTML = "";
 
-        const VF = Vex.Flow;
-        const measuresPerRow = 4;
-        const staveWidth = 182;
-        // [박자 기둥 및 보(Beam) 공간 확보를 위해 세로 높이 최적화: 160 -> 175]
-        const staveHeight = 175;
-        const totalRows = Math.ceil(song.measures.length / measuresPerRow);
+          const VF = Vex.Flow;
+          const measuresPerRow = 4;
+          const staveWidth = 182;
+          // [박자 기둥 및 보(Beam) 공간 확보를 위해 세로 높이: 175px]
+          const staveHeight = 175;
+          const totalRows = Math.ceil(song.measures.length / measuresPerRow);
 
-        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-        renderer.resize(740, totalRows * staveHeight + 50);
-        const context = renderer.getContext();
+          const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+          renderer.resize(740, totalRows * staveHeight + 50);
+          const context = renderer.getContext();
 
-        if (VF.TabNote && VF.TabNote.prototype && VF.TabNote.prototype.render_options) {
-          VF.TabNote.prototype.render_options.font = "bold 8.5px sans-serif";
+          if (VF.TabNote && VF.TabNote.prototype && VF.TabNote.prototype.render_options) {
+            VF.TabNote.prototype.render_options.font = "bold 8.5px sans-serif";
+          }
+
+          // 박자 기둥과 빔 정보를 저장할 배열
+          const rhythmItems = [];
+
+          song.measures.forEach((m, idx) => {
+            const col = idx % measuresPerRow;
+            const row = Math.floor(idx / measuresPerRow);
+            const x = 6 + col * staveWidth;
+            const y = 20 + row * staveHeight;
+
+            const stave = new VF.TabStave(x, y, staveWidth);
+
+            if (col === 0) {
+              stave.addClef("tab");
+            }
+
+            stave.setContext(context).draw();
+
+            const notes = [];
+            const tuplets = [];
+            const measureBeatGroups = [];
+            let skipNextBeat = false;
+
+            for (let bIdx = 0; bIdx < m.beats.length; bIdx++) {
+              if (skipNextBeat) {
+                skipNextBeat = false;
+                continue;
+              }
+
+              const beat = m.beats[bIdx];
+              const currentBeatNotes = [];
+
+              if (beat.type === "2") {
+                if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
+                const slot = beat.slots[0];
+                const positions = [];
+                for (let s = 1; s <= 6; s++) {
+                  if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
+                    positions.push({ str: s, fret: slot.strings[s] });
+                  }
+                }
+                const isNote = positions.length > 0;
+                const tabNote = new VF.TabNote({
+                  positions: isNote ? positions : [{ str: 3, fret: "" }],
+                  duration: isNote ? "h" : "hr"
+                });
+                if (tabNote.render_options) {
+                  tabNote.render_options.font = "bold 8.5px sans-serif";
+                }
+
+                if (slot.chord && slot.chord.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                }
+                if (slot.lyric && slot.lyric.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+                }
+                notes.push(tabNote);
+                currentBeatNotes.push({ note: tabNote, isNote });
+                measureBeatGroups.push({ type: "2", items: currentBeatNotes, stave });
+                continue;
+              }
+
+              if (beat.type === "4") {
+                const slot = beat.slots[0];
+                const positions = [];
+                for (let s = 1; s <= 6; s++) {
+                  if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
+                    positions.push({ str: s, fret: slot.strings[s] });
+                  }
+                }
+                const isNote = positions.length > 0;
+                const tabNote = new VF.TabNote({
+                  positions: isNote ? positions : [{ str: 3, fret: "" }],
+                  duration: isNote ? "q" : "qr"
+                });
+                if (tabNote.render_options) {
+                  tabNote.render_options.font = "bold 8.5px sans-serif";
+                }
+
+                if (slot.chord && slot.chord.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                }
+                if (slot.lyric && slot.lyric.trim() !== "") {
+                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+                }
+                notes.push(tabNote);
+                currentBeatNotes.push({ note: tabNote, isNote });
+                measureBeatGroups.push({ type: "4", items: currentBeatNotes, stave });
+              } else if (beat.type === "8") {
+                beat.slots.forEach(slot => {
+                  const positions = [];
+                  for (let s = 1; s <= 6; s++) {
+                    if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
+                      positions.push({ str: s, fret: slot.strings[s] });
+                    }
+                  }
+                  const isNote = positions.length > 0;
+                  const tabNote = new VF.TabNote({
+                    positions: isNote ? positions : [{ str: 3, fret: "" }],
+                    duration: isNote ? "8" : "8r"
+                  });
+                  if (tabNote.render_options) {
+                    tabNote.render_options.font = "bold 8.5px sans-serif";
+                  }
+
+                  if (slot.chord && slot.chord.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                  }
+                  if (slot.lyric && slot.lyric.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+                  }
+                  notes.push(tabNote);
+                  currentBeatNotes.push({ note: tabNote, isNote });
+                });
+                measureBeatGroups.push({ type: "8", items: currentBeatNotes, stave });
+              } else if (beat.type === "16") {
+                beat.slots.forEach(slot => {
+                  const positions = [];
+                  for (let s = 1; s <= 6; s++) {
+                    if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
+                      positions.push({ str: s, fret: slot.strings[s] });
+                    }
+                  }
+                  const isNote = positions.length > 0;
+                  const tabNote = new VF.TabNote({
+                    positions: isNote ? positions : [{ str: 3, fret: "" }],
+                    duration: isNote ? "16" : "16r"
+                  });
+                  if (tabNote.render_options) {
+                    tabNote.render_options.font = "bold 8.5px sans-serif";
+                  }
+
+                  if (slot.chord && slot.chord.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                  }
+                  if (slot.lyric && slot.lyric.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+                  }
+                  notes.push(tabNote);
+                  currentBeatNotes.push({ note: tabNote, isNote });
+                });
+                measureBeatGroups.push({ type: "16", items: currentBeatNotes, stave });
+              } else if (beat.type === "triplet") {
+                const tripletNotes = [];
+                beat.slots.forEach(slot => {
+                  const positions = [];
+                  for (let s = 1; s <= 6; s++) {
+                    if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
+                      positions.push({ str: s, fret: slot.strings[s] });
+                    }
+                  }
+                  const isNote = positions.length > 0;
+                  const tabNote = new VF.TabNote({
+                    positions: isNote ? positions : [{ str: 3, fret: "" }],
+                    duration: isNote ? "8" : "8r"
+                  });
+                  if (tabNote.render_options) {
+                    tabNote.render_options.font = "bold 8.5px sans-serif";
+                  }
+
+                  if (slot.chord && slot.chord.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
+                  }
+                  if (slot.lyric && slot.lyric.trim() !== "") {
+                    tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+                  }
+                  tripletNotes.push(tabNote);
+                  notes.push(tabNote);
+                  currentBeatNotes.push({ note: tabNote, isNote });
+                });
+                measureBeatGroups.push({ type: "triplet", items: currentBeatNotes, stave });
+
+                try {
+                  const tuplet = new VF.Tuplet(tripletNotes, { num_notes: 3, notes_occupied: 2 });
+                  tuplet.setBracketed(true);
+                  tuplets.push(tuplet);
+                } catch (e) {}
+              }
+            }
+
+            try {
+              VF.Formatter.FormatAndDraw(context, stave, notes);
+            } catch (err) {
+              console.warn("FormatAndDraw fallback:", err);
+            }
+
+            tuplets.forEach(t => {
+              try { t.setContext(context).draw(); } catch (e) {}
+            });
+
+            // 각 박자 그룹을 리듬 렌더링 목록에 수집
+            rhythmItems.push({
+              measureIdx: idx,
+              col, row, x, y, stave,
+              groups: measureBeatGroups
+            });
+          });
+
+          // 2차 패스: SVG 내 프렛 폰트 최적화 & 완벽한 박자 기둥/보/기호 렌더링
+          const svg = container.querySelector("svg");
+          if (svg) {
+            // 프렛 폰트 축소 (8.5px, 자간 -0.8px)
+            const texts = svg.querySelectorAll("text");
+            texts.forEach(t => {
+              const txt = t.textContent ? t.textContent.trim() : "";
+              const isTuplet = t.closest && (t.closest(".vf-tuplet") || t.closest("g.vf-tuplet"));
+              const isAnnotation = t.closest && (t.closest(".vf-annotation") || t.closest("g.vf-annotation"));
+              const isClef = t.closest && (t.closest(".vf-clef") || t.closest("g.vf-clef"));
+
+              if (!isTuplet && !isAnnotation && !isClef && /^[0-9X]{1,2}$/.test(txt)) {
+                t.setAttribute("font-size", "8.5px");
+                t.setAttribute("font-weight", "bold");
+                t.setAttribute("letter-spacing", "-0.8px");
+                t.style.fontSize = "8.5px";
+                t.style.fontWeight = "bold";
+                t.style.letterSpacing = "-0.8px";
+              }
+            });
+
+            // 박자 기둥, 빔, 박자표, 템포, 마디 번호를 SVG 요소로 100% 안정적으로 직접 렌더링
+            const rhythmGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            rhythmGroup.setAttribute("class", "custom-rhythm-layer");
+
+            rhythmItems.forEach(item => {
+              const stave = item.stave;
+              // 6번줄(최하단 줄) Y 좌표
+              const y6 = stave.getYForLine(5);
+              const yStemTop = y6 + 3;
+              const yStemBot = y6 + 21;
+
+              // 1. 첫 마디에 4/4 박자표 렌더링
+              if (item.measureIdx === 0) {
+                const tsText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                tsText.setAttribute("x", item.x + 36);
+                tsText.setAttribute("y", stave.getYForLine(2) - 2);
+                tsText.setAttribute("font-family", "serif");
+                tsText.setAttribute("font-size", "14px");
+                tsText.setAttribute("font-weight", "bold");
+                tsText.setAttribute("fill", "#0f172a");
+                tsText.textContent = "4";
+                rhythmGroup.appendChild(tsText);
+
+                const tsText2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                tsText2.setAttribute("x", item.x + 36);
+                tsText2.setAttribute("y", stave.getYForLine(4) + 6);
+                tsText2.setAttribute("font-family", "serif");
+                tsText2.setAttribute("font-size", "14px");
+                tsText2.setAttribute("font-weight", "bold");
+                tsText2.setAttribute("fill", "#0f172a");
+                tsText2.textContent = "4";
+                rhythmGroup.appendChild(tsText2);
+
+                // 템포 기호 (♩ = BPM)
+                const tempoText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                tempoText.setAttribute("x", item.x + 8);
+                tempoText.setAttribute("y", item.y - 8);
+                tempoText.setAttribute("font-family", "sans-serif");
+                tempoText.setAttribute("font-size", "12px");
+                tempoText.setAttribute("font-weight", "bold");
+                tempoText.setAttribute("fill", "#334155");
+                tempoText.textContent = `♩ = ${song.tempo}`;
+                rhythmGroup.appendChild(tempoText);
+              }
+
+              // 2. 각 줄 시작 마디에 마디 번호 박스 ([1], [5], [9] ...)
+              if (item.col === 0) {
+                const mBox = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                mBox.setAttribute("x", item.x);
+                mBox.setAttribute("y", item.y - 14);
+                mBox.setAttribute("width", (item.measureIdx + 1) >= 10 ? "20" : "16");
+                mBox.setAttribute("height", "14");
+                mBox.setAttribute("rx", "3");
+                mBox.setAttribute("fill", "#f1f5f9");
+                mBox.setAttribute("stroke", "#64748b");
+                mBox.setAttribute("stroke-width", "1");
+                rhythmGroup.appendChild(mBox);
+
+                const mText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                mText.setAttribute("x", item.x + ((item.measureIdx + 1) >= 10 ? 10 : 8));
+                mText.setAttribute("y", item.y - 3);
+                mText.setAttribute("font-family", "sans-serif");
+                mText.setAttribute("font-size", "9px");
+                mText.setAttribute("font-weight", "800");
+                mText.setAttribute("text-anchor", "middle");
+                mText.setAttribute("fill", "#1e293b");
+                mText.textContent = (item.measureIdx + 1).toString();
+                rhythmGroup.appendChild(mText);
+              }
+
+              // 3. 각 박자별 음가 기둥(Stem) 및 보(Beam) 연결
+              item.groups.forEach(bg => {
+                const btype = bg.type;
+                const noteItems = bg.items;
+                const xs = [];
+
+                noteItems.forEach(ni => {
+                  try {
+                    const nx = ni.note.getAbsoluteX();
+                    if (nx && !isNaN(nx)) {
+                      xs.push({ x: nx, isNote: ni.isNote });
+                    }
+                  } catch (e) {}
+                });
+
+                if (xs.length === 0) return;
+
+                if (btype === "4") {
+                  const target = xs[0];
+                  if (target.isNote) {
+                    // 4분음표 기둥
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", target.x);
+                    line.setAttribute("y1", yStemTop);
+                    line.setAttribute("x2", target.x);
+                    line.setAttribute("y2", yStemBot);
+                    line.setAttribute("stroke", "#1e293b");
+                    line.setAttribute("stroke-width", "1.6");
+                    rhythmGroup.appendChild(line);
+                  } else {
+                    // 4분쉼표 (𝄽 기호 또는 쉼표 뱃지)
+                    const rText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    rText.setAttribute("x", target.x);
+                    rText.setAttribute("y", y6 + 13);
+                    rText.setAttribute("font-family", "sans-serif");
+                    rText.setAttribute("font-size", "11px");
+                    rText.setAttribute("font-weight", "bold");
+                    rText.setAttribute("fill", "#64748b");
+                    rText.setAttribute("text-anchor", "middle");
+                    rText.textContent = "𝄽";
+                    rhythmGroup.appendChild(rText);
+                  }
+                } else if (btype === "2") {
+                  const target = xs[0];
+                  if (target.isNote) {
+                    // 2분음표 기둥 + 2박 원형 기호
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", target.x);
+                    line.setAttribute("y1", yStemTop);
+                    line.setAttribute("x2", target.x);
+                    line.setAttribute("y2", yStemBot);
+                    line.setAttribute("stroke", "#1e293b");
+                    line.setAttribute("stroke-width", "1.6");
+                    rhythmGroup.appendChild(line);
+
+                    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    ring.setAttribute("cx", target.x);
+                    ring.setAttribute("cy", yStemBot + 2);
+                    ring.setAttribute("r", "2.5");
+                    ring.setAttribute("fill", "white");
+                    ring.setAttribute("stroke", "#1e293b");
+                    ring.setAttribute("stroke-width", "1.5");
+                    rhythmGroup.appendChild(ring);
+                  }
+                } else if (btype === "8") {
+                  // 8분음표: 기둥 2개 + 가로 보(Beam) 연결
+                  const noteXs = xs.filter(item => item.isNote);
+                  xs.forEach(target => {
+                    if (target.isNote) {
+                      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                      line.setAttribute("x1", target.x);
+                      line.setAttribute("y1", yStemTop);
+                      line.setAttribute("x2", target.x);
+                      line.setAttribute("y2", yStemBot);
+                      line.setAttribute("stroke", "#1e293b");
+                      line.setAttribute("stroke-width", "1.6");
+                      rhythmGroup.appendChild(line);
+                    } else {
+                      const rText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                      rText.setAttribute("x", target.x);
+                      rText.setAttribute("y", y6 + 13);
+                      rText.setAttribute("font-family", "sans-serif");
+                      rText.setAttribute("font-size", "10px");
+                      rText.setAttribute("font-weight", "bold");
+                      rText.setAttribute("fill", "#64748b");
+                      rText.setAttribute("text-anchor", "middle");
+                      rText.textContent = "𝄾";
+                      rhythmGroup.appendChild(rText);
+                    }
+                  });
+
+                  if (noteXs.length >= 2) {
+                    const beam = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    beam.setAttribute("x1", noteXs[0].x);
+                    beam.setAttribute("y1", yStemBot);
+                    beam.setAttribute("x2", noteXs[noteXs.length - 1].x);
+                    beam.setAttribute("y2", yStemBot);
+                    beam.setAttribute("stroke", "#1e293b");
+                    beam.setAttribute("stroke-width", "3.2");
+                    beam.setAttribute("stroke-linecap", "square");
+                    rhythmGroup.appendChild(beam);
+                  }
+                } else if (btype === "16") {
+                  // 16분음표: 기둥 4개 + 이중 가로 보(Double Beam) 연결
+                  const noteXs = xs.filter(item => item.isNote);
+                  xs.forEach(target => {
+                    if (target.isNote) {
+                      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                      line.setAttribute("x1", target.x);
+                      line.setAttribute("y1", yStemTop);
+                      line.setAttribute("x2", target.x);
+                      line.setAttribute("y2", yStemBot);
+                      line.setAttribute("stroke", "#1e293b");
+                      line.setAttribute("stroke-width", "1.6");
+                      rhythmGroup.appendChild(line);
+                    } else {
+                      const rText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                      rText.setAttribute("x", target.x);
+                      rText.setAttribute("y", y6 + 13);
+                      rText.setAttribute("font-family", "sans-serif");
+                      rText.setAttribute("font-size", "9px");
+                      rText.setAttribute("font-weight", "bold");
+                      rText.setAttribute("fill", "#64748b");
+                      rText.setAttribute("text-anchor", "middle");
+                      rText.textContent = "𝄿";
+                      rhythmGroup.appendChild(rText);
+                    }
+                  });
+
+                  if (noteXs.length >= 2) {
+                    const xStart = noteXs[0].x;
+                    const xEnd = noteXs[noteXs.length - 1].x;
+
+                    // 상단 빔
+                    const beam1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    beam1.setAttribute("x1", xStart);
+                    beam1.setAttribute("y1", yStemBot - 4.5);
+                    beam1.setAttribute("x2", xEnd);
+                    beam1.setAttribute("y2", yStemBot - 4.5);
+                    beam1.setAttribute("stroke", "#1e293b");
+                    beam1.setAttribute("stroke-width", "2.2");
+                    beam1.setAttribute("stroke-linecap", "square");
+                    rhythmGroup.appendChild(beam1);
+
+                    // 하단 빔
+                    const beam2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    beam2.setAttribute("x1", xStart);
+                    beam2.setAttribute("y1", yStemBot);
+                    beam2.setAttribute("x2", xEnd);
+                    beam2.setAttribute("y2", yStemBot);
+                    beam2.setAttribute("stroke", "#1e293b");
+                    beam2.setAttribute("stroke-width", "2.2");
+                    beam2.setAttribute("stroke-linecap", "square");
+                    rhythmGroup.appendChild(beam2);
+                  }
+                } else if (btype === "triplet") {
+                  // 셋잇단음표: 기둥 3개 + 가로 보 + 숫자 3 표기
+                  const noteXs = xs.filter(item => item.isNote);
+                  xs.forEach(target => {
+                    if (target.isNote) {
+                      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                      line.setAttribute("x1", target.x);
+                      line.setAttribute("y1", yStemTop);
+                      line.setAttribute("x2", target.x);
+                      line.setAttribute("y2", yStemBot);
+                      line.setAttribute("stroke", "#1e293b");
+                      line.setAttribute("stroke-width", "1.6");
+                      rhythmGroup.appendChild(line);
+                    }
+                  });
+
+                  if (noteXs.length >= 2) {
+                    const xStart = noteXs[0].x;
+                    const xEnd = noteXs[noteXs.length - 1].x;
+
+                    const beam = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    beam.setAttribute("x1", xStart);
+                    beam.setAttribute("y1", yStemBot);
+                    beam.setAttribute("x2", xEnd);
+                    beam.setAttribute("y2", yStemBot);
+                    beam.setAttribute("stroke", "#1e293b");
+                    beam.setAttribute("stroke-width", "3");
+                    beam.setAttribute("stroke-linecap", "square");
+                    rhythmGroup.appendChild(beam);
+
+                    const t3 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    t3.setAttribute("x", (xStart + xEnd) / 2);
+                    t3.setAttribute("y", yStemBot + 10);
+                    t3.setAttribute("font-family", "sans-serif");
+                    t3.setAttribute("font-size", "9px");
+                    t3.setAttribute("font-weight", "800");
+                    t3.setAttribute("text-anchor", "middle");
+                    t3.setAttribute("fill", "#2563eb");
+                    t3.textContent = "3";
+                    rhythmGroup.appendChild(t3);
+                  }
+                }
+              });
+            });
+
+            svg.appendChild(rhythmGroup);
+          }
+        } catch (err) {
+          console.error("Critical rendering error in useEffect:", err);
         }
-
-        const STEM_DOWN = (VF.Stem && VF.Stem.DOWN !== undefined) ? VF.Stem.DOWN : -1;
-
-        song.measures.forEach((m, idx) => {
-          const col = idx % measuresPerRow;
-          const row = Math.floor(idx / measuresPerRow);
-          const x = 6 + col * staveWidth;
-          const y = 20 + row * staveHeight;
-
-          const stave = new VF.TabStave(x, y, staveWidth);
-
-          // 1. Clef & Time Signature (첫 마디에 4/4 박자표 표시)
-          if (col === 0) {
-            stave.addClef("tab");
-            if (row === 0) {
-              try {
-                stave.addTimeSignature("4/4");
-              } catch (e) {}
-            }
-          }
-
-          // 2. Tempo Marking (첫 마디 상단에 ♩ = BPM 템포 표시)
-          if (idx === 0) {
-            try {
-              const bpm = parseInt(song.tempo, 10) || 120;
-              stave.setTempo({ duration: "q", bpm: bpm }, 0);
-            } catch (e) {}
-          }
-
-          // 3. Measure Number Badge (각 줄 첫 마디 상단에 마디 번호 박스 표시)
-          if (col === 0) {
-            try {
-              stave.setSection((idx + 1).toString(), 0);
-            } catch (e) {}
-          }
-
-          stave.setContext(context).draw();
-
-          const notes = [];
-          const tuplets = [];
-          const allBeams = [];
-          let skipNextBeat = false;
-
-          for (let bIdx = 0; bIdx < m.beats.length; bIdx++) {
-            if (skipNextBeat) {
-              skipNextBeat = false;
-              continue;
-            }
-
-            const beat = m.beats[bIdx];
-            const beatNotes = [];
-
-            if (beat.type === "2") {
-              if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
-              const slot = beat.slots[0];
-              const positions = [];
-              for (let s = 1; s <= 6; s++) {
-                if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
-                  positions.push({ str: s, fret: slot.strings[s] });
-                }
-              }
-              const isNote = positions.length > 0;
-              const tabNote = new VF.TabNote({
-                positions: isNote ? positions : [{ str: 3, fret: "" }],
-                duration: isNote ? "h" : "hr"
-              }, isNote);
-
-              if (isNote) {
-                try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
-              }
-              if (tabNote.render_options) {
-                tabNote.render_options.draw_stem = isNote;
-                tabNote.render_options.font = "bold 8.5px sans-serif";
-              }
-
-              if (slot.chord && slot.chord.trim() !== "") {
-                tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
-              }
-              if (slot.lyric && slot.lyric.trim() !== "") {
-                tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-              }
-              notes.push(tabNote);
-              continue;
-            }
-
-            if (beat.type === "4") {
-              const slot = beat.slots[0];
-              const positions = [];
-              for (let s = 1; s <= 6; s++) {
-                if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
-                  positions.push({ str: s, fret: slot.strings[s] });
-                }
-              }
-              const isNote = positions.length > 0;
-              const tabNote = new VF.TabNote({
-                positions: isNote ? positions : [{ str: 3, fret: "" }],
-                duration: isNote ? "q" : "qr"
-              }, isNote);
-
-              if (isNote) {
-                try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
-              }
-              if (tabNote.render_options) {
-                tabNote.render_options.draw_stem = isNote;
-                tabNote.render_options.font = "bold 8.5px sans-serif";
-              }
-
-              if (slot.chord && slot.chord.trim() !== "") {
-                tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
-              }
-              if (slot.lyric && slot.lyric.trim() !== "") {
-                tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-              }
-              notes.push(tabNote);
-            } else if (beat.type === "8") {
-              beat.slots.forEach(slot => {
-                const positions = [];
-                for (let s = 1; s <= 6; s++) {
-                  if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
-                    positions.push({ str: s, fret: slot.strings[s] });
-                  }
-                }
-                const isNote = positions.length > 0;
-                const tabNote = new VF.TabNote({
-                  positions: isNote ? positions : [{ str: 3, fret: "" }],
-                  duration: isNote ? "8" : "8r"
-                }, isNote);
-
-                if (isNote) {
-                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
-                }
-                if (tabNote.render_options) {
-                  tabNote.render_options.draw_stem = isNote;
-                  tabNote.render_options.font = "bold 8.5px sans-serif";
-                }
-
-                if (slot.chord && slot.chord.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
-                }
-                if (slot.lyric && slot.lyric.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-                }
-                notes.push(tabNote);
-                beatNotes.push(tabNote);
-              });
-
-              // 8분음표 박자별 빔(Beam) 연결
-              const stemNotes = beatNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
-              if (stemNotes.length > 1) {
-                try {
-                  const b = new VF.Beam(stemNotes);
-                  allBeams.push(b);
-                } catch (e) {}
-              }
-            } else if (beat.type === "16") {
-              beat.slots.forEach(slot => {
-                const positions = [];
-                for (let s = 1; s <= 6; s++) {
-                  if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
-                    positions.push({ str: s, fret: slot.strings[s] });
-                  }
-                }
-                const isNote = positions.length > 0;
-                const tabNote = new VF.TabNote({
-                  positions: isNote ? positions : [{ str: 3, fret: "" }],
-                  duration: isNote ? "16" : "16r"
-                }, isNote);
-
-                if (isNote) {
-                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
-                }
-                if (tabNote.render_options) {
-                  tabNote.render_options.draw_stem = isNote;
-                  tabNote.render_options.font = "bold 8.5px sans-serif";
-                }
-
-                if (slot.chord && slot.chord.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
-                }
-                if (slot.lyric && slot.lyric.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-                }
-                notes.push(tabNote);
-                beatNotes.push(tabNote);
-              });
-
-              // 16분음표 박자별 이중 빔(Double Beam) 연결
-              const stemNotes = beatNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
-              if (stemNotes.length > 1) {
-                try {
-                  const b = new VF.Beam(stemNotes);
-                  allBeams.push(b);
-                } catch (e) {}
-              }
-            } else if (beat.type === "triplet") {
-              const tripletNotes = [];
-              beat.slots.forEach(slot => {
-                const positions = [];
-                for (let s = 1; s <= 6; s++) {
-                  if (slot.strings[s] !== undefined && slot.strings[s] !== "") {
-                    positions.push({ str: s, fret: slot.strings[s] });
-                  }
-                }
-                const isNote = positions.length > 0;
-                const tabNote = new VF.TabNote({
-                  positions: isNote ? positions : [{ str: 3, fret: "" }],
-                  duration: isNote ? "8" : "8r"
-                }, isNote);
-
-                if (isNote) {
-                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
-                }
-                if (tabNote.render_options) {
-                  tabNote.render_options.draw_stem = isNote;
-                  tabNote.render_options.font = "bold 8.5px sans-serif";
-                }
-
-                if (slot.chord && slot.chord.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.chord.trim()).setFont("sans-serif", 12, "bold").setVerticalJustification(VF.Annotation.VerticalJustify.TOP), 0);
-                }
-                if (slot.lyric && slot.lyric.trim() !== "") {
-                  tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-                }
-                tripletNotes.push(tabNote);
-                notes.push(tabNote);
-              });
-
-              // 셋잇단음표 전용 빔 연결
-              const stemNotes = tripletNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
-              if (stemNotes.length > 1) {
-                try {
-                  const b = new VF.Beam(stemNotes);
-                  allBeams.push(b);
-                } catch (e) {}
-              }
-
-              try {
-                const tuplet = new VF.Tuplet(tripletNotes, { num_notes: 3, notes_occupied: 2 });
-                tuplet.setBracketed(true);
-                tuplets.push(tuplet);
-              } catch (e) {
-                console.error(e);
-              }
-            }
-          }
-
-          // Format and Draw notes
-          VF.Formatter.FormatAndDraw(context, stave, notes);
-
-          // Draw beams
-          allBeams.forEach(b => {
-            try {
-              b.setContext(context).draw();
-            } catch (e) {
-              console.warn("Beam draw error:", e);
-            }
-          });
-
-          // Draw tuplets
-          tuplets.forEach(t => {
-            try {
-              t.setContext(context).draw();
-            } catch (e) {
-              console.error(e);
-            }
-          });
-        });
-
-        // [핵심 최적화]: SVG 내 프렛 숫자 크기 및 자간 적용 (기둥/보, 코드, 가사 제외)
-        const svg = container.querySelector("svg");
-        if (svg) {
-          const texts = svg.querySelectorAll("text");
-          texts.forEach(t => {
-            const txt = t.textContent ? t.textContent.trim() : "";
-            const isTuplet = t.closest && (t.closest(".vf-tuplet") || t.closest("g.vf-tuplet"));
-            const isAnnotation = t.closest && (t.closest(".vf-annotation") || t.closest("g.vf-annotation"));
-            const isClef = t.closest && (t.closest(".vf-clef") || t.closest("g.vf-clef"));
-            const isTimeSig = t.closest && (t.closest(".vf-timesig") || t.closest("g.vf-timesig"));
-
-            if (!isTuplet && !isAnnotation && !isClef && !isTimeSig && /^[0-9X]{1,2}$/.test(txt)) {
-              t.setAttribute("font-size", "8.5px");
-              t.setAttribute("font-weight", "bold");
-              t.setAttribute("letter-spacing", "-0.8px");
-              t.style.fontSize = "8.5px";
-              t.style.fontWeight = "bold";
-              t.style.letterSpacing = "-0.8px";
-            }
-          });
-        }
-      }, [song]);
+      }, [song, transposeOffset]);
 
   
 
@@ -3970,11 +4207,15 @@
                 <h1 className="sheet-title">{song.title}</h1>
 
                 <div className="sheet-meta">
+
                   <span><strong>Artist:</strong> {song.artist}</span>
+
                   <span><strong>Tuning:</strong> {song.tuning}</span>
-                  <span><strong>Time:</strong> 4/4 박자</span>
+
                   <span><strong>Tempo:</strong> ♩={song.tempo}</span>
+
                   <span><strong>Layout:</strong> 4 Measures / Line</span>
+
                 </div>
 
               </div>
@@ -3993,7 +4234,11 @@
 
   
 
-        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+        ReactDOM.createRoot(document.getElementById("root")).render(
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    );
   </script>
 </body>
 </html>
