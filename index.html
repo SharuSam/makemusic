@@ -1,1364 +1,2724 @@
 <!DOCTYPE html>
+
 <html lang="ko">
+
 <head>
+
   <meta charset="UTF-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>사루쌤의 일렉기타 타브(TAB) & 가사 & 코드 & 오디오 & 이조 에디터</title>
+
+  <title>일렉기타 타브(TAB) & 박자·음가(기둥/빔) & 가사 & 코드 & 오디오 에디터</title>
+
   
+
   <!-- CDN Libraries -->
+
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
 
+  
+
   <style>
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
+
       font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+
       background-color: #f1f5f9;
+
       color: #0f172a;
+
       padding: 20px;
+
     }
+
     .app-container { max-width: 1040px; margin: 0 auto; }
+
     
+
     /* 편집 패널 */
+
     .editor-card {
+
       background: #ffffff;
+
       padding: 24px;
+
       border-radius: 14px;
+
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+
       margin-bottom: 24px;
+
     }
+
     .card-top {
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       margin-bottom: 16px;
+
       flex-wrap: wrap;
+
       gap: 12px;
+
     }
+
     .card-top h2 {
+
       font-size: 20px;
+
       font-weight: 800;
+
       color: #1e293b;
+
       display: flex;
+
       align-items: center;
+
       gap: 8px;
+
     }
+
     
+
     .meta-grid {
+
       display: grid;
+
       grid-template-columns: 2fr 1.5fr 1.5fr 1fr;
+
       gap: 12px;
+
       margin-bottom: 18px;
+
     }
+
     .meta-grid label {
+
       display: block;
+
       font-size: 13px;
+
       font-weight: 600;
+
       color: #64748b;
+
       margin-bottom: 4px;
+
     }
+
     .meta-grid input {
+
       width: 100%;
+
       padding: 8px 10px;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 6px;
+
       font-size: 14px;
+
       outline: none;
+
     }
+
     .meta-grid input:focus {
+
       border-color: #2563eb;
+
       box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+
     }
+
+  
 
     /* 이조 (Transpose) 전용 제어 바 */
+
     .transpose-bar {
+
       background: #fdf4ff;
+
       border: 1px solid #f0abfc;
+
       border-radius: 10px;
+
       padding: 10px 16px;
+
       margin-bottom: 16px;
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
+
       flex-wrap: wrap;
+
       gap: 10px;
+
     }
+
     .transpose-title {
+
       font-size: 13px;
+
       font-weight: 800;
+
       color: #86198f;
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
     }
+
     .transpose-btns {
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
       flex-wrap: wrap;
+
     }
+
     .btn-trans {
+
       background: white;
+
       border: 1px solid #d946ef;
+
       color: #a21caf;
+
       font-size: 12px;
+
       font-weight: 700;
+
       padding: 6px 11px;
+
       border-radius: 6px;
+
       cursor: pointer;
+
       transition: all 0.15s;
+
     }
+
     .btn-trans:hover {
+
       background: #fae8ff;
+
       border-color: #c026d3;
+
     }
+
     .trans-status {
+
       font-weight: 800;
+
       font-size: 13px;
+
       color: #701a75;
+
       padding: 4px 10px;
+
       background: #f5d0fe;
+
       border-radius: 6px;
+
     }
+
+  
 
     /* 프렛 번호 팔레트 */
+
     .palette-box {
+
       background: #f8fafc;
+
       border: 1px solid #e2e8f0;
+
       border-radius: 10px;
+
       padding: 12px 16px;
+
       margin-bottom: 18px;
+
       display: flex;
+
       align-items: center;
+
       flex-wrap: wrap;
+
       gap: 8px;
+
     }
+
     .palette-title {
+
       font-size: 13px;
+
       font-weight: 700;
+
       color: #334155;
+
       margin-right: 6px;
+
     }
+
     .fret-btn {
+
       min-width: 32px;
+
       height: 32px;
+
       padding: 0 8px;
+
       border-radius: 6px;
+
       border: 1px solid #cbd5e1;
+
       background: white;
+
       font-size: 13px;
+
       font-weight: 700;
+
       cursor: pointer;
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       transition: all 0.15s;
+
     }
+
     .fret-btn:hover { background: #e2e8f0; }
+
     .fret-btn.active {
+
       background: #2563eb;
+
       color: white;
+
       border-color: #1d4ed8;
+
       box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+
     }
+
     .fret-btn.eraser.active {
+
       background: #dc2626;
+
       border-color: #b91c1c;
+
       color: white;
+
     }
+
     .custom-fret-input {
+
       width: 50px;
+
       height: 32px;
+
       text-align: center;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 6px;
+
       font-weight: 700;
+
       font-size: 13px;
+
     }
+
+  
 
     /* 상단 액션 툴바 */
+
     .toolbar {
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       flex-wrap: wrap;
+
       gap: 10px;
+
       margin-bottom: 20px;
+
       padding-bottom: 16px;
+
       border-bottom: 1px solid #e2e8f0;
+
     }
+
     .btn-group {
+
       display: flex;
+
       flex-wrap: wrap;
+
       gap: 8px;
+
       align-items: center;
+
     }
+
     button {
+
       cursor: pointer;
+
       font-size: 14px;
+
       font-weight: 600;
+
       padding: 8px 15px;
+
       border-radius: 6px;
+
       border: none;
+
       transition: all 0.2s;
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 6px;
+
     }
+
+  
 
     /* 버튼 스타일 */
+
     .btn-play { background: #2563eb; color: white; }
+
     .btn-play:hover { background: #1d4ed8; }
+
     .btn-stop { background: #ef4444; color: white; }
+
     .btn-stop:hover { background: #dc2626; }
 
+  
+
     .btn-ocr {
+
       background: linear-gradient(135deg, #7c3aed, #6366f1);
+
       color: white;
+
       box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+
     }
+
     .btn-ocr:hover {
+
       background: linear-gradient(135deg, #6d28d9, #4f46e5);
+
     }
+
+  
 
     .btn-save { background: #0284c7; color: white; }
+
     .btn-save:hover { background: #0369a1; }
+
     .btn-load { background: #0d9488; color: white; }
+
     .btn-load:hover { background: #0f766e; }
+
     .btn-reset { background: #f59e0b; color: white; }
+
     .btn-reset:hover { background: #d97706; }
 
+  
+
     .btn-print { background: #059669; color: white; }
+
     .btn-print:hover { background: #047857; }
+
     .btn-add { background: #475569; color: white; }
+
     .btn-add:hover { background: #334155; }
+
     .btn-del { background: #fee2e2; color: #dc2626; }
+
     .btn-del:hover { background: #fecaca; }
 
+  
+
     /* 알림 토스트 */
+
     .toast-msg {
+
       background: #10b981;
+
       color: white;
+
       padding: 10px 18px;
+
       border-radius: 8px;
+
       font-weight: 700;
+
       font-size: 13px;
+
       margin-bottom: 16px;
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+
     }
+
+  
 
     /* 모달 팝업 */
+
     .modal-overlay {
+
       position: fixed;
+
       top: 0; left: 0; right: 0; bottom: 0;
+
       background: rgba(15, 23, 42, 0.6);
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       z-index: 1000;
+
       padding: 16px;
+
     }
+
     .modal-card {
+
       background: white;
+
       width: 100%;
+
       max-width: 680px;
+
       border-radius: 14px;
+
       padding: 24px;
+
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+
       max-height: 90vh;
+
       overflow-y: auto;
+
     }
+
     .modal-header {
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       margin-bottom: 16px;
+
       border-bottom: 1px solid #e2e8f0;
+
       padding-bottom: 12px;
+
     }
+
     .modal-header h3 { font-size: 18px; color: #0f172a; }
 
+  
+
     .guide-box {
+
       background: #f8fafc;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 10px;
+
       padding: 14px 16px;
+
       margin-bottom: 18px;
+
     }
+
     .guide-title {
+
       font-weight: 800;
+
       font-size: 13px;
+
       color: #1e293b;
+
       margin-bottom: 6px;
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
     }
+
     .guide-desc {
+
       font-size: 12px;
+
       color: #475569;
+
       line-height: 1.5;
+
       margin-bottom: 10px;
+
     }
+
     .sample-preview-img {
+
       width: 100%;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 6px;
+
       background: #ffffff;
+
       display: block;
+
       margin-bottom: 8px;
+
     }
+
+  
 
     .drop-zone {
+
       border: 2px dashed #94a3b8;
+
       border-radius: 10px;
+
       padding: 24px;
+
       text-align: center;
+
       background: #fafafa;
+
       cursor: pointer;
+
       transition: all 0.2s;
+
       margin-bottom: 18px;
+
     }
+
     .drop-zone:hover {
+
       border-color: #7c3aed;
+
       background: #f5f3ff;
+
     }
+
     .drop-zone-icon { font-size: 32px; margin-bottom: 8px; }
 
+  
+
     .api-key-box {
+
       background: #f1f5f9;
+
       border-radius: 8px;
+
       padding: 12px 14px;
+
       margin-bottom: 16px;
+
     }
+
     .api-key-box label {
+
       font-size: 12px;
+
       font-weight: 700;
+
       color: #334155;
+
       display: block;
+
       margin-bottom: 6px;
+
     }
+
     .api-key-box input {
+
       width: 100%;
+
       padding: 8px;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 6px;
+
       font-size: 13px;
+
     }
+
+  
 
     .saved-list {
+
       max-height: 280px;
+
       overflow-y: auto;
+
       margin-bottom: 18px;
+
       border: 1px solid #e2e8f0;
+
       border-radius: 8px;
+
     }
+
     .saved-item {
+
       padding: 12px 14px;
+
       border-bottom: 1px solid #f1f5f9;
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
     }
+
     .saved-item:last-child { border-bottom: none; }
+
     .saved-item-info { flex: 1; }
+
     .saved-item-title { font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 2px; }
+
     .saved-item-date { font-size: 11px; color: #64748b; }
+
     .saved-item-actions { display: flex; gap: 6px; }
 
+  
+
     /* 마디 편집 상자 */
+
     .measure-box {
+
       border: 1px solid #cbd5e1;
+
       border-radius: 10px;
+
       padding: 16px;
+
       margin-bottom: 22px;
+
       background: #ffffff;
+
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+
       transition: border-color 0.2s;
+
     }
+
     .measure-header {
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       margin-bottom: 10px;
+
     }
+
     .measure-title {
+
       font-size: 15px;
+
       font-weight: 800;
+
       color: #1e293b;
+
     }
+
     .measure-hint {
+
       font-size: 12px;
+
       color: #64748b;
+
     }
+
+  
 
     /* 박자별 리듬 선택 컨트롤 바 */
+
     .rhythm-control-bar {
+
       display: grid;
+
       grid-template-columns: repeat(4, 1fr);
+
       gap: 8px;
+
       margin-bottom: 12px;
+
       background: #f1f5f9;
+
       padding: 10px;
+
       border-radius: 8px;
+
     }
+
     .beat-control {
+
       background: white;
+
       padding: 6px 8px;
+
       border-radius: 6px;
+
       border: 1px solid #e2e8f0;
+
       text-align: center;
+
     }
+
     .beat-control-title {
+
       font-size: 11px;
+
       font-weight: 800;
+
       color: #3b82f6;
+
       margin-bottom: 4px;
+
     }
+
     .rhythm-select {
+
       width: 100%;
+
       padding: 4px;
+
       font-size: 12px;
+
       font-weight: 700;
+
       border-radius: 4px;
+
       border: 1px solid #cbd5e1;
+
       outline: none;
+
       background: #f8fafc;
+
       cursor: pointer;
+
     }
+
+  
 
     /* 6선지 스태프 영역 */
+
     .staff-container {
+
       position: relative;
+
       background: #fafafa;
+
       border: 1px solid #cbd5e1;
+
       border-radius: 8px;
+
       padding: 6px 0;
+
       overflow-x: auto;
+
     }
+
     .staff-table {
+
       width: 100%;
+
       border-collapse: collapse;
+
       table-layout: fixed;
+
     }
+
+  
 
     .staff-header-th {
+
       background: #f1f5f9;
+
       font-size: 11px;
+
       font-weight: 700;
+
       color: #475569;
+
       padding: 5px 0;
+
       border-bottom: 2px solid #94a3b8;
+
       border-right: 1px dashed #cbd5e1;
+
       text-align: center;
+
     }
+
     .staff-header-corner {
+
       width: 100px;
+
       text-align: left;
+
       padding-left: 8px;
+
       border-right: 2px solid #64748b;
+
     }
+
     .beat-start-th {
+
       border-left: 2px solid #3b82f6;
+
       background: #e0f2fe;
+
       color: #0369a1;
+
     }
+
+  
 
     /* 상단 코드 행 */
+
     .chord-title-td {
+
       background: #f0fdf4;
+
       color: #15803d;
+
       font-weight: 800;
+
       font-size: 12px;
+
       padding-left: 8px;
+
       border-right: 2px solid #16a34a;
+
       border-bottom: 2px solid #16a34a;
+
       height: 34px;
+
     }
+
     .chord-slot-td {
+
       background: #f0fdf4;
+
       border-bottom: 2px solid #16a34a;
+
       border-right: 1px dashed #bbf7d0;
+
       padding: 3px 2px;
+
       text-align: center;
+
     }
+
     .chord-slot-td.beat-start-td {
+
       border-left: 2px solid #86efac;
+
     }
+
     .chord-slot-td input {
+
       width: 100%;
+
       border: 1px solid transparent;
+
       border-radius: 4px;
+
       text-align: center;
+
       font-size: 13px;
+
       font-weight: 800;
+
       color: #166534;
+
       padding: 3px 0;
+
       background: transparent;
+
       outline: none;
+
     }
+
     .chord-slot-td input:focus {
+
       background: #ffffff;
+
       border-color: #16a34a;
+
       box-shadow: 0 0 0 1.5px #16a34a;
+
     }
+
+  
 
     /* 기타 6선지 행 */
+
     .str-label-td {
+
       background: #f8fafc;
+
       font-size: 12px;
+
       font-weight: 700;
+
       font-family: monospace;
+
       padding-left: 8px;
+
       border-right: 2px solid #64748b;
+
       height: 38px;
+
     }
+
     .slot-cell {
+
       position: relative;
+
       height: 38px;
+
       cursor: pointer;
+
       border-right: 1px dashed #e2e8f0;
+
       text-align: center;
+
       padding: 0;
+
       vertical-align: middle;
+
       transition: background 0.1s;
+
     }
+
     .slot-cell.beat-start-td {
+
       border-left: 2px solid #e0f2fe;
+
     }
+
     .slot-cell.playing-slot {
+
       background: #fef08a !important;
+
     }
+
     .string-line {
+
       position: absolute;
+
       left: 0;
+
       right: 0;
+
       top: 50%;
+
       height: 1px;
+
       background: #94a3b8;
+
       z-index: 1;
+
       pointer-events: none;
+
     }
+
     .string-row-4 .string-line { height: 1.5px; background: #64748b; }
+
     .string-row-5 .string-line { height: 2px; background: #475569; }
+
     .string-row-6 .string-line { height: 2.5px; background: #334155; }
 
+  
+
     /* 인라인 프렛 입력 인풋 */
+
     .inline-fret-input {
+
       position: relative;
+
       z-index: 3;
+
       width: 26px;
+
       height: 26px;
+
       border-radius: 50%;
+
       border: 1px solid transparent;
+
       text-align: center;
+
       font-size: 12px;
+
       font-weight: 800;
+
       background: transparent;
+
       color: #64748b;
+
       outline: none;
+
       transition: all 0.15s ease;
+
       margin: 0 auto;
+
       display: block;
+
       padding: 0;
+
       cursor: text;
+
     }
+
     .inline-fret-input:hover {
+
       background: rgba(37, 99, 235, 0.12);
+
       border-color: #93c5fd;
+
     }
+
     .inline-fret-input:focus {
+
       background: #ffffff;
+
       color: #1e293b;
+
       border: 2px solid #2563eb;
+
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+
     }
+
     .inline-fret-input.has-fret {
+
       background: #1e293b;
+
       color: #ffffff;
+
       border: 1px solid #ffffff;
+
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+
     }
+
     .inline-fret-input.has-fret:focus {
+
       background: #2563eb;
+
       border-color: #ffffff;
+
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+
     }
+
     .inline-fret-input.has-mute {
+
       background: #dc2626 !important;
+
       color: #ffffff !important;
+
     }
+
+  
 
     /* 가사 입력 행 */
+
     .lyric-title-td {
+
       background: #fefce8;
+
       color: #854d0e;
+
       font-weight: 700;
+
       font-size: 12px;
+
       padding-left: 8px;
+
       border-right: 2px solid #ca8a04;
+
       border-top: 2px solid #ca8a04;
+
       height: 32px;
+
     }
+
     .lyric-slot-td {
+
       background: #fefce8;
+
       border-top: 2px solid #ca8a04;
+
       border-right: 1px dashed #fef08a;
+
       padding: 3px 2px;
+
     }
+
     .lyric-slot-td.beat-start-td {
+
       border-left: 2px solid #fef08a;
+
     }
+
     .lyric-slot-td input {
+
       width: 100%;
+
       border: 1px solid transparent;
+
       border-radius: 4px;
+
       text-align: center;
+
       font-size: 11px;
+
       padding: 3px 0;
+
       background: transparent;
+
       outline: none;
+
     }
+
     .lyric-slot-td input:focus {
+
       background: #ffffff;
+
       border-color: #ca8a04;
+
       box-shadow: 0 0 0 1px #ca8a04;
+
     }
+
+  
 
     /* A4 악보 용지 영역 */
+
     .sheet-wrapper {
+
       display: flex;
+
       justify-content: center;
+
     }
+
     .a4-sheet {
+
       background: white;
+
       width: 794px;
+
       min-height: 1123px;
+
       padding: 35px 25px;
+
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
       box-sizing: border-box;
+
     }
+
     .sheet-header {
+
       text-align: center;
+
       border-bottom: 2px solid #0f172a;
+
       padding-bottom: 12px;
+
       margin-bottom: 16px;
+
     }
+
     .sheet-title {
+
       font-size: 26px;
+
       font-weight: 800;
+
       margin-bottom: 6px;
+
       letter-spacing: -0.5px;
+
     }
+
     .sheet-meta {
+
       display: flex;
+
       justify-content: space-between;
+
       font-size: 12px;
+
       color: #334155;
+
     }
+
     .score-view svg {
+
       display: block;
+
       margin: 0 auto;
+
     }
+
+  
 
     /* [핵심 수정]: SVG 내 타브 프렛 숫자가 겹치지 않도록 컴팩트한 글자 크기 및 자간 적용 */
+
     .score-view svg g.vf-tabnote text,
+
     .score-view svg text.vf-tabnote {
+
       font-size: 8.5px !important;
+
       font-weight: 800 !important;
+
       letter-spacing: -0.8px !important;
+
     }
+
+  
 
     /* A4 세로 인쇄 최적화 (한 줄에 4마디) */
+
     @page {
+
       size: A4 portrait;
+
       margin: 10mm 12mm;
+
     }
+
     @media print {
+
       body {
+
         background: transparent !important;
+
         padding: 0 !important;
+
       }
+
       .no-print, .modal-overlay {
+
         display: none !important;
+
       }
+
       .sheet-wrapper {
+
         display: block !important;
+
         margin: 0 !important;
+
         padding: 0 !important;
+
       }
+
       .a4-sheet {
+
         width: 100% !important;
+
         min-height: auto !important;
+
         box-shadow: none !important;
+
         padding: 0 !important;
+
         margin: 0 !important;
+
       }
+
       .score-view svg {
+
         page-break-inside: avoid;
+
         width: 100% !important;
+
       }
+
     }
+
   </style>
+
 </head>
+
 <body>
+
   <div id="root"></div>
 
+  
+
   <script type="text/babel">
+
     const { useState, useEffect, useRef } = React;
 
+  
+
     const STRINGS = [
+
       { num: 1, label: "1 (High E)" },
+
       { num: 2, label: "2 (B)" },
+
       { num: 3, label: "3 (G)" },
+
       { num: 4, label: "4 (D)" },
+
       { num: 5, label: "5 (A)" },
+
       { num: 6, label: "6 (Low E)" }
+
     ];
 
+  
+
     const BASE_FREQS = {
+
       1: 329.63, 2: 246.94, 3: 196.00,
+
       4: 146.83, 5: 110.00, 6: 82.41
+
     };
 
+  
+
     const CHROMATIC_SCALE_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
     const CHROMATIC_SCALE_FLAT  = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
+  
+
     function transposeChord(chordStr, semitones) {
+
       if (!chordStr || chordStr.trim() === "") return "";
+
       const match = chordStr.trim().match(/^([A-G][#b]?)(.*)$/);
+
       if (!match) return chordStr;
 
+  
+
       const root = match[1];
+
       const suffix = match[2];
 
+  
+
       let idx = CHROMATIC_SCALE_SHARP.indexOf(root);
+
       if (idx === -1) idx = CHROMATIC_SCALE_FLAT.indexOf(root);
+
       if (idx === -1) return chordStr;
 
+  
+
       let newIdx = (idx + semitones) % 12;
+
       if (newIdx < 0) newIdx += 12;
 
+  
+
       const useFlat = root.includes("b") || (semitones < 0 && !root.includes("#"));
+
       const newRoot = useFlat ? CHROMATIC_SCALE_FLAT[newIdx] : CHROMATIC_SCALE_SHARP[newIdx];
 
+  
+
       if (suffix.includes("/")) {
+
         const parts = suffix.split("/");
+
         const bass = parts[1];
+
         let bIdx = CHROMATIC_SCALE_SHARP.indexOf(bass);
+
         if (bIdx === -1) bIdx = CHROMATIC_SCALE_FLAT.indexOf(bass);
+
         if (bIdx !== -1) {
+
           let nbIdx = (bIdx + semitones) % 12;
+
           if (nbIdx < 0) nbIdx += 12;
+
           const nbRoot = useFlat ? CHROMATIC_SCALE_FLAT[nbIdx] : CHROMATIC_SCALE_SHARP[nbIdx];
+
           return newRoot + parts[0] + "/" + nbRoot;
+
         }
+
       }
 
+  
+
       return newRoot + suffix;
+
     }
+
+  
 
     const PALETTE_FRETS = ["0", "1", "2", "3", "4", "5", "7", "8", "9", "10", "12", "15", "X", "DEL"];
 
+  
+
     const createSlot = () => ({ chord: "", strings: {}, lyric: "" });
 
+  
+
     function createBeat(type = "4") {
+
       let count = 1;
+
       if (type === "8") count = 2;
+
       else if (type === "16") count = 4;
+
       else if (type === "triplet") count = 3;
+
       else if (type === "2") count = 1;
 
+  
+
       return {
+
         type,
+
         slots: Array.from({ length: count }, createSlot)
+
       };
+
     }
 
+  
+
     const createAttachedSampleMeasures = () => {
+
       const m1 = {
+
         id: Date.now(),
+
         beats: [
+
           createBeat("8"),
+
           createBeat("8"),
+
           createBeat("16"),
+
           createBeat("16")
+
         ]
+
       };
+
       m1.beats[0].slots[0].strings[2] = "15";
+
       m1.beats[0].slots[1].strings[2] = "13";
+
       m1.beats[1].slots[0].strings[1] = "15";
+
       m1.beats[1].slots[1].strings[1] = "15";
+
       m1.beats[2].slots[0].strings[2] = "13";
+
       m1.beats[3].slots[0].strings[1] = "18";
+
       m1.beats[3].slots[1].strings[1] = "18";
+
       m1.beats[3].slots[2].strings[1] = "17";
+
       m1.beats[3].slots[3].strings[1] = "X";
 
+  
+
       const m2 = {
+
         id: Date.now() + 1,
+
         beats: [
+
           createBeat("8"),
+
           createBeat("16"),
+
           createBeat("triplet"),
+
           createBeat("16")
+
         ]
+
       };
+
       m2.beats[0].slots[0].strings[3] = "12";
+
       m2.beats[0].slots[1].strings[3] = "14";
+
       m2.beats[1].slots[0].strings[3] = "14";
+
       m2.beats[1].slots[1].strings[2] = "10";
+
       m2.beats[1].slots[2].strings[2] = "10";
+
       m2.beats[1].slots[3].strings[2] = "12";
+
       m2.beats[2].slots[0].strings[1] = "10";
+
       m2.beats[2].slots[1].strings[1] = "12";
+
       m2.beats[2].slots[2].strings[1] = "13";
+
       m2.beats[3].slots[0].strings[1] = "12";
+
       m2.beats[3].slots[1].strings[1] = "13";
+
       m2.beats[3].slots[2].strings[1] = "12";
+
       m2.beats[3].slots[3].strings[1] = "13";
 
+  
+
       const m3 = {
+
         id: Date.now() + 2,
+
         beats: [
+
           createBeat("8"),
+
           createBeat("8"),
+
           createBeat("2"),
+
           createBeat("4")
+
         ]
+
       };
+
       m3.beats[0].slots[0].strings[2] = "12";
+
       m3.beats[0].slots[1].strings[2] = "13";
 
+  
+
       const m4 = {
+
         id: Date.now() + 3,
+
         beats: [
+
           createBeat("16"),
+
           createBeat("16"),
+
           createBeat("4"),
+
           createBeat("4")
+
         ]
+
       };
+
       m4.beats[0].slots[0].strings[2] = "10";
+
       m4.beats[0].slots[1].strings[2] = "12";
+
       m4.beats[0].slots[2].strings[2] = "13";
+
       m4.beats[1].slots[0].strings[1] = "10";
+
       m4.beats[1].slots[1].strings[1] = "12";
+
       m4.beats[1].slots[2].strings[1] = "13";
+
       m4.beats[2].slots[0].strings[1] = "15";
 
+  
+
       return [m1, m2, m3, m4];
+
     };
 
+  
+
     function App() {
+
       const [song, setSong] = useState({
+
         title: "기타 솔로 4마디 악보",
+
         artist: "연주자",
+
         tuning: "Standard (E A D G B E)",
+
         tempo: "120",
+
         measures: createAttachedSampleMeasures()
+
       });
 
+  
+
       const [selectedFret, setSelectedFret] = useState("0");
+
       const [customFret, setCustomFret] = useState("");
+
       const [isPlaying, setIsPlaying] = useState(false);
+
       const [playingSlotKey, setPlayingSlotKey] = useState(null);
+
       const [toast, setToast] = useState(null);
+
       const [transposeOffset, setTransposeOffset] = useState(0);
 
+  
+
       const [showLoadModal, setShowLoadModal] = useState(false);
+
       const [showOcrModal, setShowOcrModal] = useState(false);
+
       const [savedList, setSavedList] = useState([]);
 
+  
+
       const [imageFile, setImageFile] = useState(null);
+
       const [imagePreview, setImagePreview] = useState(null);
+
       const [geminiApiKey, setGeminiApiKey] = useState(localStorage.getItem("gemini_vision_api_key") || "");
+
       const [isAnalyzing, setIsAnalyzing] = useState(false);
+
       const [ocrModeAppend, setOcrModeAppend] = useState(false);
 
+  
+
       const scoreRef = useRef(null);
+
       const audioCtxRef = useRef(null);
+
       const playTimersRef = useRef([]);
+
       const fileInputRef = useRef(null);
+
       const ocrFileInputRef = useRef(null);
 
+  
+
       const showToast = (msg) => {
+
         setToast(msg);
+
         setTimeout(() => setToast(null), 3500);
+
       };
 
+  
+
       const handleTranspose = (semitones) => {
+
         let clampedCount = 0;
+
         setSong(prev => {
+
           const nextMeasures = prev.measures.map(m => ({
+
             ...m,
+
             beats: m.beats.map(b => ({
+
               ...b,
+
               slots: b.slots.map(s => {
+
                 const nextStrings = {};
+
                 Object.keys(s.strings || {}).forEach(k => {
+
                   const val = s.strings[k];
+
                   if (val === "X") {
+
                     nextStrings[k] = "X";
+
                   } else if (val !== undefined && val !== "") {
+
                     const fNum = parseInt(val, 10);
+
                     if (!isNaN(fNum)) {
+
                       let target = fNum + semitones;
+
                       if (target < 0) {
+
                         target = 0;
+
                         clampedCount++;
+
                       }
+
                       if (target > 24) target = 24;
+
                       nextStrings[k] = target.toString();
+
                     }
+
                   }
+
                 });
+
+  
 
                 const nextChord = s.chord ? transposeChord(s.chord, semitones) : "";
 
+  
+
                 return {
+
                   ...s,
+
                   strings: nextStrings,
+
                   chord: nextChord
+
                 };
+
               })
+
             }))
+
           }));
 
+  
+
           return { ...prev, measures: nextMeasures };
+
         });
 
+  
+
         setTransposeOffset(prev => prev + semitones);
-        const direction = semitones > 0 ? `+${semitones} (반음 올림)` : `${semitones} (반음 내림)`;
+
+        const direction = semitones > 0 ? \`+${semitones} (반음 올림)\` : \`${semitones} (반음 내림)\`;
+
         if (clampedCount > 0) {
-          showToast(`🎼 악보가 ${direction} 이조되었습니다. (0번 개방현 이하의 음은 0프렛 유지)`);
+
+          showToast(\`ð¼ 악보가 ${direction} 이조되었습니다. (0번 개방현 이하의 음은 0프렛 유지)\`);
+
         } else {
-          showToast(`🎼 악보와 코드가 일괄적으로 ${direction} 이조되었습니다!`);
+
+          showToast(\`ð¼ 악보와 코드가 일괄적으로 ${direction} 이조되었습니다!\`);
+
         }
+
       };
+
+  
 
       const playGuitarNote = (audioCtx, freq, durationSec) => {
+
         if (!freq || isNaN(freq)) return;
+
         const now = audioCtx.currentTime;
 
+  
+
         const osc = audioCtx.createOscillator();
+
         osc.type = "sawtooth";
+
         osc.frequency.setValueAtTime(freq, now);
 
+  
+
         const oscSub = audioCtx.createOscillator();
+
         oscSub.type = "triangle";
+
         oscSub.frequency.setValueAtTime(freq, now);
 
+  
+
         const filter = audioCtx.createBiquadFilter();
+
         filter.type = "lowpass";
+
         filter.frequency.setValueAtTime(Math.min(freq * 8, 7500), now);
+
         filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.8, 350), now + 0.12);
 
+  
+
         const gainNode = audioCtx.createGain();
+
         gainNode.gain.setValueAtTime(0.0001, now);
+
         gainNode.gain.linearRampToValueAtTime(0.25, now + 0.006);
+
         gainNode.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(durationSec * 1.3, 0.45));
 
+  
+
         osc.connect(filter);
+
         oscSub.connect(filter);
+
         filter.connect(gainNode);
+
         gainNode.connect(audioCtx.destination);
 
+  
+
         osc.start(now);
+
         oscSub.start(now);
+
         osc.stop(now + durationSec * 1.5);
+
         oscSub.stop(now + durationSec * 1.5);
+
       };
 
+  
+
       const handlePlay = () => {
+
         if (isPlaying) {
+
           handleStop();
+
           return;
+
         }
+
+  
 
         if (!audioCtxRef.current) {
+
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
           audioCtxRef.current = new AudioContextClass();
+
         }
+
         if (audioCtxRef.current.state === "suspended") {
+
           audioCtxRef.current.resume();
+
         }
+
+  
 
         setIsPlaying(true);
+
         playTimersRef.current = [];
 
+  
+
         const bpm = parseInt(song.tempo, 10) || 120;
+
         const quarterSec = 60 / bpm;
+
+  
 
         let currentOffset = 0;
 
+  
+
         song.measures.forEach((m, mIdx) => {
+
           let skipNextBeat = false;
+
           for (let bIdx = 0; bIdx < m.beats.length; bIdx++) {
+
             if (skipNextBeat) {
+
               skipNextBeat = false;
+
               continue;
+
             }
+
+  
 
             const beat = m.beats[bIdx];
+
             if (beat.type === "2") {
+
               if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
+
             }
+
+  
 
             let slotDurationSec = quarterSec;
+
             if (beat.type === "2") slotDurationSec = quarterSec * 2;
+
             else if (beat.type === "4") slotDurationSec = quarterSec;
+
             else if (beat.type === "8") slotDurationSec = quarterSec / 2;
+
             else if (beat.type === "16") slotDurationSec = quarterSec / 4;
+
             else if (beat.type === "triplet") slotDurationSec = quarterSec / 3;
 
+  
+
             beat.slots.forEach((slot, sIdx) => {
+
               const scheduledTime = currentOffset;
-              const slotKey = `${mIdx}-${bIdx}-${sIdx}`;
+
+              const slotKey = \`${mIdx}-${bIdx}-${sIdx}\`;
+
+  
 
               const timer = setTimeout(() => {
+
                 setPlayingSlotKey(slotKey);
 
+  
+
                 Object.keys(slot.strings).forEach((strNum, chordDelayIdx) => {
+
                   const fretVal = slot.strings[strNum];
+
                   if (fretVal !== undefined && fretVal !== "" && fretVal !== "X") {
+
                     const fNum = parseInt(fretVal, 10);
+
                     if (!isNaN(fNum)) {
+
                       const baseFreq = BASE_FREQS[strNum];
+
                       const noteFreq = baseFreq * Math.pow(2, fNum / 12);
+
                       setTimeout(() => {
+
                         playGuitarNote(audioCtxRef.current, noteFreq, slotDurationSec);
+
                       }, chordDelayIdx * 16);
+
                     }
+
                   }
+
                 });
+
               }, scheduledTime * 1000);
 
+  
+
               playTimersRef.current.push(timer);
+
               currentOffset += slotDurationSec;
+
             });
+
           }
+
         });
 
+  
+
         const finishTimer = setTimeout(() => {
+
           setIsPlaying(false);
+
           setPlayingSlotKey(null);
+
         }, currentOffset * 1000 + 300);
+
         playTimersRef.current.push(finishTimer);
+
       };
+
+  
 
       const handleStop = () => {
+
         playTimersRef.current.forEach(timer => clearTimeout(timer));
+
         playTimersRef.current = [];
+
         setIsPlaying(false);
+
         setPlayingSlotKey(null);
+
       };
+
+  
 
       const handleImageSelect = (file) => {
+
         if (!file) return;
+
         setImageFile(file);
+
         const reader = new FileReader();
+
         reader.onload = (e) => {
+
           setImagePreview(e.target.result);
+
         };
+
         reader.readAsDataURL(file);
+
       };
+
+  
 
       const handlePaste = (e) => {
+
         const items = e.clipboardData?.items;
+
         if (!items) return;
+
         for (let i = 0; i < items.length; i++) {
+
           if (items[i].type.indexOf("image") !== -1) {
+
             const blob = items[i].getAsFile();
+
             handleImageSelect(blob);
+
             break;
+
           }
+
         }
+
       };
+
+  
 
       const loadExampleSample = () => {
+
         const sampleMeasures = createAttachedSampleMeasures();
+
         if (ocrModeAppend) {
+
           setSong(prev => ({ ...prev, measures: [...prev.measures, ...sampleMeasures] }));
+
           showToast("✨ 제시해주신 첨부 4마디 악보가 기존 악보 뒤에 추가되었습니다!");
+
         } else {
+
           setSong(prev => ({ ...prev, measures: sampleMeasures }));
+
           showToast("✨ 제시해주신 첨부 4마디 악보와 똑같은 타브 악보가 생성되었습니다!");
+
         }
+
         setShowOcrModal(false);
+
       };
 
+  
+
       const handleAnalyzeImage = async () => {
+
         if (!imagePreview) {
+
           alert("먼저 4마디 타브 악보 이미지를 선택하거나 붙여넣으세요.");
+
           return;
+
         }
+
+  
 
         const apiKey = geminiApiKey.trim();
+
         if (!apiKey) {
+
           const useSample = window.confirm(
-            "Gemini API 키가 입력되지 않았습니다.\n(구글 AI 스튜디오에서 무료 API 키를 발급받아 입력하시면 실제 이미지를 AI가 자동 판독합니다.)\n\n지금 첨부하신 예시 악보(솔로 4마디) 데이터로 즉시 생성해 보시겠습니까?"
+
+            "Gemini API 키가 입력되지 않았습니다.\\n(구글 AI 스튜디오에서 무료 API 키를 발급받아 입력하시면 실제 이미지를 AI가 자동 판독합니다.)\\n\\n지금 첨부하신 예시 악보(솔로 4마디) 데이터로 즉시 생성해 보시겠습니까?"
+
           );
+
           if (useSample) loadExampleSample();
+
           return;
+
         }
+
+  
 
         try {
+
           setIsAnalyzing(true);
+
           localStorage.setItem("gemini_vision_api_key", apiKey);
 
-          const mimeMatch = imagePreview.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+  
+
+          const mimeMatch = imagePreview.match(/^data:(image\\/[a-zA-Z+]+);base64,/);
+
           const mimeType = mimeMatch ? mimeMatch[1] : (imageFile?.type || "image/png");
-          const base64Data = imagePreview.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
 
-          const promptText = `
+          const base64Data = imagePreview.replace(/^data:image\\/[a-zA-Z+]+;base64,/, "");
+
+  
+
+          const promptText = \`
+
 당신은 기타 타브(TAB) 악보 전문 OMR 분석가입니다.
-제공된 이미지는 정확히 4마디(4 measures)로 구성된 6줄 기타 타브 악보입니다.
-위에서부터 1번줄(High E) ~ 6번줄(Low E)의 프렛 번호(숫자 0~24 또는 뮤트 X), 박자 리듬(4분 "4", 8분 "8", 16분 "16", 셋잇단음표 "triplet", 2분음표 "2"), 코드 기호(chord), 가사를 분석하세요.
-반드시 마크다운 기호 없이 오직 순수한 JSON 형식으로만 응답해야 합니다:
-{
-  "measures": [
-    {
-      "beats": [
-        {
-          "type": "4",
-          "slots": [
-            { "chord": "", "strings": { "1": "", "2": "15" }, "lyric": "" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-`;
 
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+제공된 이미지는 정확히 4마디(4 measures)로 구성된 6줄 기타 타브 악보입니다.
+
+위에서부터 1번줄(High E) \~ 6번줄(Low E)의 프렛 번호(숫자 0\~24 또는 뮤트 X), 박자 리듬(4분 "4", 8분 "8", 16분 "16", 셋잇단음표 "triplet", 2분음표 "2"), 코드 기호(chord), 가사를 분석하세요.
+
+반드시 마크다운 기호 없이 오직 순수한 JSON 형식으로만 응답해야 합니다:
+
+{
+
+  "measures": [
+
+    {
+
+      "beats": [
+
+        {
+
+          "type": "4",
+
+          "slots": [
+
+            { "chord": "", "strings": { "1": "", "2": "15" }, "lyric": "" }
+
+          ]
+
+        }
+
+      ]
+
+    }
+
+  ]
+
+}
+
+\`;
+
+  
+
+          const endpoint = \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}\`;
+
+  
 
           const payload = {
+
             contents: [{
+
               parts: [
+
                 { text: promptText },
+
                 {
+
                   inlineData: {
+
                     mimeType: mimeType,
+
                     data: base64Data
+
                   }
+
                 }
+
               ]
+
             }],
+
             generationConfig: {
+
               temperature: 0.1,
+
               responseMimeType: "application/json"
+
             }
+
           };
 
+  
+
           const response = await fetch(endpoint, {
+
             method: "POST",
+
             headers: { "Content-Type": "application/json" },
+
             body: JSON.stringify(payload)
+
           });
+
+  
 
           const result = await response.json();
 
+  
+
           if (!response.ok || result.error) {
-            const errDetail = result.error ? `${result.error.message} (코드: ${result.error.code})` : `HTTP ${response.status}`;
-            throw new Error(`Google Gemini API 오류: ${errDetail}`);
+
+            const errDetail = result.error ? \`${result.error.message} (코드: ${result.error.code})\` : \`HTTP ${response.status}\`;
+
+            throw new Error(\`Google Gemini API 오류: ${errDetail}\`);
+
           }
+
+  
 
           const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
           if (!rawText) {
+
             const finishReason = result.candidates?.[0]?.finishReason;
-            throw new Error(finishReason ? `AI가 응답을 생성하지 못했습니다 (이유: ${finishReason})` : "AI 분석 응답이 비어 있습니다.");
+
+            throw new Error(finishReason ? \`AI가 응답을 생성하지 못했습니다 (이유: ${finishReason})\` : "AI 분석 응답이 비어 있습니다.");
+
           }
 
+  
+
           let cleanJson = rawText.trim();
-          if (cleanJson.startsWith("```json")) {
-            cleanJson = cleanJson.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
-          } else if (cleanJson.startsWith("```")) {
-            cleanJson = cleanJson.replace(/^```\s*/, "").replace(/```\s*$/, "");
+
+          if (cleanJson.startsWith("\`\`\`json")) {
+
+            cleanJson = cleanJson.replace(/^\`\`\`json\\s*/i, "").replace(/\`\`\`\\s*$/, "");
+
+          } else if (cleanJson.startsWith("\`\`\`")) {
+
+            cleanJson = cleanJson.replace(/^\`\`\`\\s*/, "").replace(/\`\`\`\\s*$/, "");
+
           }
+
           cleanJson = cleanJson.trim();
+
+  
 
           const parsed = JSON.parse(cleanJson);
 
+  
+
           if (parsed.measures && parsed.measures.length > 0) {
+
             const formattedMeasures = parsed.measures.map((m, idx) => ({
+
               ...m,
+
               id: Date.now() + idx
+
             }));
 
+  
+
             if (ocrModeAppend) {
+
               setSong(prev => ({ ...prev, measures: [...prev.measures, ...formattedMeasures] }));
-              showToast(`🎉 이미지에서 4마디 악보를 성공적으로 읽어 기존 악보 뒤에 추가했습니다!`);
+
+              showToast(\`ð 이미지에서 4마디 악보를 성공적으로 읽어 기존 악보 뒤에 추가했습니다!\`);
+
             } else {
+
               setSong(prev => ({ ...prev, measures: formattedMeasures }));
-              showToast(`🎉 이미지에서 4마디 악보를 성공적으로 읽어 똑같이 생성했습니다!`);
+
+              showToast(\`ð 이미지에서 4마디 악보를 성공적으로 읽어 똑같이 생성했습니다!\`);
+
             }
+
             setShowOcrModal(false);
+
           } else {
+
             throw new Error("올바른 4마디 악보 구조를 인식하지 못했습니다.");
+
           }
+
         } catch (err) {
+
           console.error(err);
-          alert(`이미지 분석 중 오류가 발생했습니다:\n${err.message}\n\n[도움말]\n1. 구글 AI 스튜디오(aistudio.google.com)에서 발급받은 올바른 API 키인지 확인하세요.\n2. 키가 없거나 테스트를 원하시면 [✨ 첨부 예시 악보 즉시 생성] 버튼을 누르시면 바로 악보가 생성됩니다.`);
+
+          alert(\`이미지 분석 중 오류가 발생했습니다:\\n${err.message}\\n\\n[도움말]\\n1. 구글 AI 스튜디오(aistudio.google.com)에서 발급받은 올바른 API 키인지 확인하세요.\\n2. 키가 없거나 테스트를 원하시면 [✨ 첨부 예시 악보 즉시 생성] 버튼을 누르시면 바로 악보가 생성됩니다.\`);
+
         } finally {
+
           setIsAnalyzing(false);
+
         }
+
       };
+
+  
 
       const handleSave = () => {
+
         try {
+
           const key = "guitar_tab_saved_scores";
+
           const raw = localStorage.getItem(key);
+
           const list = raw ? JSON.parse(raw) : [];
+
+  
 
           const newEntry = {
+
             id: Date.now(),
+
             savedAt: new Date().toLocaleString(),
+
             title: song.title || "무제 악보",
+
             data: song
+
           };
 
+  
+
           const updated = [newEntry, ...list.filter(item => item.title !== song.title)];
+
           localStorage.setItem(key, JSON.stringify(updated));
-          showToast(`💾 "${song.title}" 악보가 안전하게 저장되었습니다!`);
+
+          showToast(\`ð¾ "${song.title}" 악보가 안전하게 저장되었습니다!\`);
+
         } catch (e) {
+
           showToast("저장 중 오류가 발생했습니다.");
+
         }
+
       };
+
+  
 
       const handleOpenLoadModal = () => {
+
         try {
+
           const raw = localStorage.getItem("guitar_tab_saved_scores");
+
           const list = raw ? JSON.parse(raw) : [];
+
           setSavedList(list);
+
           setShowLoadModal(true);
+
         } catch (e) {
+
           setSavedList([]);
+
           setShowLoadModal(true);
+
         }
+
       };
+
+  
 
       const loadSavedScore = (entry) => {
+
         setSong(entry.data);
+
         setShowLoadModal(false);
+
         setTransposeOffset(0);
-        showToast(`📂 "${entry.title}" 악보를 성공적으로 불러왔습니다.`);
+
+        showToast(\`ð "${entry.title}" 악보를 성공적으로 불러왔습니다.\`);
+
       };
+
+  
 
       const deleteSavedScore = (id) => {
+
         const updated = savedList.filter(item => item.id !== id);
+
         setSavedList(updated);
+
         localStorage.setItem("guitar_tab_saved_scores", JSON.stringify(updated));
+
       };
+
+  
 
       const handleReset = () => {
+
         if (window.confirm("현재 악보를 모두 지우고 빈 악보로 새로 시작하시겠습니까?")) {
+
           setSong({
+
             title: "새로운 기타 악보",
+
             artist: "연주자",
+
             tuning: "Standard (E A D G B E)",
+
             tempo: "120",
+
             measures: [
+
               { id: Date.now(), beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+
               { id: Date.now() + 1, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+
               { id: Date.now() + 2, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] },
+
               { id: Date.now() + 3, beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] }
+
             ]
+
           });
+
           setTransposeOffset(0);
-          showToast("🔄 악보가 초기화되었습니다.");
+
+          showToast("ð 악보가 초기화되었습니다.");
+
         }
+
       };
+
+  
 
       const addMeasure = () => {
+
         setSong(prev => ({
+
           ...prev,
+
           measures: [
+
             ...prev.measures,
+
             { id: Date.now(), beats: [createBeat("4"), createBeat("4"), createBeat("4"), createBeat("4")] }
+
           ]
+
         }));
+
       };
+
+  
 
       const removeMeasure = () => {
+
         if (song.measures.length <= 1) return;
+
         setSong(prev => ({ ...prev, measures: prev.measures.slice(0, -1) }));
+
       };
+
+  
 
       const handleSlotChordChange = (mIdx, bIdx, slotIdx, val) => {
+
         setSong(prev => {
+
           const nextMeasures = [...prev.measures];
+
           nextMeasures[mIdx].beats[bIdx].slots[slotIdx].chord = val;
+
           return { ...prev, measures: nextMeasures };
+
         });
+
       };
+
+  
 
       const handleRhythmChange = (mIdx, bIdx, newType) => {
+
         setSong(prev => {
+
           const nextMeasures = [...prev.measures];
+
           nextMeasures[mIdx].beats[bIdx] = createBeat(newType);
+
           return { ...prev, measures: nextMeasures };
+
         });
+
       };
+
+  
 
       const handleInlineFretChange = (mIdx, bIdx, slotIdx, strNum, val) => {
+
         const clean = val.trim().toUpperCase();
+
         setSong(prev => {
+
           const nextMeasures = [...prev.measures];
+
           const currentStrings = { ...nextMeasures[mIdx].beats[bIdx].slots[slotIdx].strings };
 
+  
+
           if (clean === "" || clean === "-") {
+
             delete currentStrings[strNum];
+
           } else {
+
             currentStrings[strNum] = clean;
+
             if (!audioCtxRef.current) {
+
               const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
               audioCtxRef.current = new AudioContextClass();
+
             }
+
             if (audioCtxRef.current.state === "suspended") {
+
               audioCtxRef.current.resume();
+
             }
+
             const fNum = parseInt(clean, 10);
+
             if (!isNaN(fNum)) {
+
               const freq = BASE_FREQS[strNum] * Math.pow(2, fNum / 12);
+
               playGuitarNote(audioCtxRef.current, freq, 0.45);
+
             }
+
           }
+
+  
 
           nextMeasures[mIdx].beats[bIdx].slots[slotIdx].strings = currentStrings;
+
           return { ...prev, measures: nextMeasures };
+
         });
+
       };
+
+  
 
       const handleFretKeyDown = (e, mIdx, bIdx, sIdx, strNum) => {
+
         if (e.key === "ArrowUp") {
+
           e.preventDefault();
+
           if (strNum > 1) {
-            document.getElementById(`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum - 1}`)?.focus();
+
+            document.getElementById(\`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum - 1}\`)?.focus();
+
           }
+
         } else if (e.key === "ArrowDown") {
+
           e.preventDefault();
+
           if (strNum < 6) {
-            document.getElementById(`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum + 1}`)?.focus();
+
+            document.getElementById(\`fret-in-${mIdx}-${bIdx}-${sIdx}-${strNum + 1}\`)?.focus();
+
           }
+
         }
+
       };
+
+  
 
       const handleLyricChange = (mIdx, bIdx, slotIdx, val) => {
+
         setSong(prev => {
+
           const nextMeasures = [...prev.measures];
+
           nextMeasures[mIdx].beats[bIdx].slots[slotIdx].lyric = val;
+
           return { ...prev, measures: nextMeasures };
+
         });
+
       };
 
-      // VexFlow 렌더링
+  
+
+      // VexFlow 렌더링 (박자·음가 기둥, 빔, 셋잇단음표, 박자표, 템포 완벽 지원)
       useEffect(() => {
         if (!scoreRef.current) return;
         const container = scoreRef.current;
@@ -1366,19 +2726,20 @@
 
         const VF = Vex.Flow;
         const measuresPerRow = 4;
-        // [수정]: 1줄 4마디 폭을 182px로 넓혀 16분음표 사이의 간격 추가 확보
         const staveWidth = 182;
-        const staveHeight = 160;
+        // [박자 기둥 및 보(Beam) 공간 확보를 위해 세로 높이 최적화: 160 -> 175]
+        const staveHeight = 175;
         const totalRows = Math.ceil(song.measures.length / measuresPerRow);
 
         const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-        renderer.resize(740, totalRows * staveHeight + 40);
+        renderer.resize(740, totalRows * staveHeight + 50);
         const context = renderer.getContext();
 
-        // [수정]: VexFlow TabNote 전역 기본 폰트 크기를 컴팩트하게 설정
         if (VF.TabNote && VF.TabNote.prototype && VF.TabNote.prototype.render_options) {
           VF.TabNote.prototype.render_options.font = "bold 8.5px sans-serif";
         }
+
+        const STEM_DOWN = (VF.Stem && VF.Stem.DOWN !== undefined) ? VF.Stem.DOWN : -1;
 
         song.measures.forEach((m, idx) => {
           const col = idx % measuresPerRow;
@@ -1387,13 +2748,37 @@
           const y = 20 + row * staveHeight;
 
           const stave = new VF.TabStave(x, y, staveWidth);
+
+          // 1. Clef & Time Signature (첫 마디에 4/4 박자표 표시)
           if (col === 0) {
             stave.addClef("tab");
+            if (row === 0) {
+              try {
+                stave.addTimeSignature("4/4");
+              } catch (e) {}
+            }
           }
+
+          // 2. Tempo Marking (첫 마디 상단에 ♩ = BPM 템포 표시)
+          if (idx === 0) {
+            try {
+              const bpm = parseInt(song.tempo, 10) || 120;
+              stave.setTempo({ duration: "q", bpm: bpm }, 0);
+            } catch (e) {}
+          }
+
+          // 3. Measure Number Badge (각 줄 첫 마디 상단에 마디 번호 박스 표시)
+          if (col === 0) {
+            try {
+              stave.setSection((idx + 1).toString(), 0);
+            } catch (e) {}
+          }
+
           stave.setContext(context).draw();
 
           const notes = [];
           const tuplets = [];
+          const allBeams = [];
           let skipNextBeat = false;
 
           for (let bIdx = 0; bIdx < m.beats.length; bIdx++) {
@@ -1403,6 +2788,7 @@
             }
 
             const beat = m.beats[bIdx];
+            const beatNotes = [];
 
             if (beat.type === "2") {
               if (bIdx === 0 || bIdx === 2) skipNextBeat = true;
@@ -1417,8 +2803,13 @@
               const tabNote = new VF.TabNote({
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "h" : "hr"
-              });
+              }, isNote);
+
+              if (isNote) {
+                try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
+              }
               if (tabNote.render_options) {
+                tabNote.render_options.draw_stem = isNote;
                 tabNote.render_options.font = "bold 8.5px sans-serif";
               }
 
@@ -1444,8 +2835,13 @@
               const tabNote = new VF.TabNote({
                 positions: isNote ? positions : [{ str: 3, fret: "" }],
                 duration: isNote ? "q" : "qr"
-              });
+              }, isNote);
+
+              if (isNote) {
+                try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
+              }
               if (tabNote.render_options) {
+                tabNote.render_options.draw_stem = isNote;
                 tabNote.render_options.font = "bold 8.5px sans-serif";
               }
 
@@ -1468,8 +2864,13 @@
                 const tabNote = new VF.TabNote({
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
-                });
+                }, isNote);
+
+                if (isNote) {
+                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
+                }
                 if (tabNote.render_options) {
+                  tabNote.render_options.draw_stem = isNote;
                   tabNote.render_options.font = "bold 8.5px sans-serif";
                 }
 
@@ -1480,7 +2881,17 @@
                   tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
                 }
                 notes.push(tabNote);
+                beatNotes.push(tabNote);
               });
+
+              // 8분음표 박자별 빔(Beam) 연결
+              const stemNotes = beatNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
+              if (stemNotes.length > 1) {
+                try {
+                  const b = new VF.Beam(stemNotes);
+                  allBeams.push(b);
+                } catch (e) {}
+              }
             } else if (beat.type === "16") {
               beat.slots.forEach(slot => {
                 const positions = [];
@@ -1493,8 +2904,13 @@
                 const tabNote = new VF.TabNote({
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "16" : "16r"
-                });
+                }, isNote);
+
+                if (isNote) {
+                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
+                }
                 if (tabNote.render_options) {
+                  tabNote.render_options.draw_stem = isNote;
                   tabNote.render_options.font = "bold 8.5px sans-serif";
                 }
 
@@ -1505,7 +2921,17 @@
                   tabNote.addModifier(new VF.Annotation(slot.lyric.trim()).setFont("sans-serif", 11, "normal").setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
                 }
                 notes.push(tabNote);
+                beatNotes.push(tabNote);
               });
+
+              // 16분음표 박자별 이중 빔(Double Beam) 연결
+              const stemNotes = beatNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
+              if (stemNotes.length > 1) {
+                try {
+                  const b = new VF.Beam(stemNotes);
+                  allBeams.push(b);
+                } catch (e) {}
+              }
             } else if (beat.type === "triplet") {
               const tripletNotes = [];
               beat.slots.forEach(slot => {
@@ -1519,8 +2945,13 @@
                 const tabNote = new VF.TabNote({
                   positions: isNote ? positions : [{ str: 3, fret: "" }],
                   duration: isNote ? "8" : "8r"
-                });
+                }, isNote);
+
+                if (isNote) {
+                  try { tabNote.setStemDirection(STEM_DOWN); } catch (e) {}
+                }
                 if (tabNote.render_options) {
+                  tabNote.render_options.draw_stem = isNote;
                   tabNote.render_options.font = "bold 8.5px sans-serif";
                 }
 
@@ -1534,6 +2965,15 @@
                 notes.push(tabNote);
               });
 
+              // 셋잇단음표 전용 빔 연결
+              const stemNotes = tripletNotes.filter(n => n.has_stem || (n.render_options && n.render_options.draw_stem));
+              if (stemNotes.length > 1) {
+                try {
+                  const b = new VF.Beam(stemNotes);
+                  allBeams.push(b);
+                } catch (e) {}
+              }
+
               try {
                 const tuplet = new VF.Tuplet(tripletNotes, { num_notes: 3, notes_occupied: 2 });
                 tuplet.setBracketed(true);
@@ -1544,8 +2984,19 @@
             }
           }
 
+          // Format and Draw notes
           VF.Formatter.FormatAndDraw(context, stave, notes);
 
+          // Draw beams
+          allBeams.forEach(b => {
+            try {
+              b.setContext(context).draw();
+            } catch (e) {
+              console.warn("Beam draw error:", e);
+            }
+          });
+
+          // Draw tuplets
           tuplets.forEach(t => {
             try {
               t.setContext(context).draw();
@@ -1555,18 +3006,18 @@
           });
         });
 
-        // [핵심 수정 2]: SVG 내의 프렛 숫자 텍스트를 직접 찾아 글자 크기(8.5px)와 자간(-0.8px)을 강제 적용하여 두 자리 수 겹침 완전 방지
-        const svgEl = container.querySelector("svg");
-        if (svgEl) {
-          const allTexts = svgEl.querySelectorAll("text");
-          allTexts.forEach(t => {
+        // [핵심 최적화]: SVG 내 프렛 숫자 크기 및 자간 적용 (기둥/보, 코드, 가사 제외)
+        const svg = container.querySelector("svg");
+        if (svg) {
+          const texts = svg.querySelectorAll("text");
+          texts.forEach(t => {
             const txt = t.textContent ? t.textContent.trim() : "";
-            // 3연음 괄호 번호, 클레프, 코드/가사 어노테이션은 제외하고 순수 프렛 숫자만 타겟팅
             const isTuplet = t.closest && (t.closest(".vf-tuplet") || t.closest("g.vf-tuplet"));
             const isAnnotation = t.closest && (t.closest(".vf-annotation") || t.closest("g.vf-annotation"));
             const isClef = t.closest && (t.closest(".vf-clef") || t.closest("g.vf-clef"));
+            const isTimeSig = t.closest && (t.closest(".vf-timesig") || t.closest("g.vf-timesig"));
 
-            if (!isTuplet && !isAnnotation && !isClef && /^[0-9X]{1,2}$/.test(txt)) {
+            if (!isTuplet && !isAnnotation && !isClef && !isTimeSig && /^[0-9X]{1,2}$/.test(txt)) {
               t.setAttribute("font-size", "8.5px");
               t.setAttribute("font-weight", "bold");
               t.setAttribute("letter-spacing", "-0.8px");
@@ -1578,490 +3029,971 @@
         }
       }, [song]);
 
+  
+
       return (
+
         <div className="app-container" onPaste={handlePaste}>
+
           {toast && (
+
             <div className="toast-msg no-print">
+
               <span>{toast}</span>
+
               <button style={{ background: "transparent", color: "white", padding: 0 }} onClick={() => setToast(null)}>✕</button>
+
             </div>
+
           )}
+
+  
 
           <div className="editor-card no-print">
+
             <div className="card-top">
-              <h2>🎸 일렉기타 타브 & 가사 & 코드 & 오디오 & 이조 에디터</h2>
+
+              <h2>ð¸ 일렉기타 타브 & 가사 & 코드 & 오디오 & 이조 에디터</h2>
+
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+
                 <button
+
                   className={isPlaying ? "btn-stop" : "btn-play"}
+
                   onClick={handlePlay}
+
                 >
+
                   {isPlaying ? "⏹️ 연주 중지" : "▶️ 연주 듣기"}
+
                 </button>
+
                 <button className="btn-ocr" onClick={() => setShowOcrModal(true)} title="타브 악보 이미지(4마디)를 읽어 자동으로 악보 생성">
-                  📷 이미지로 4마디 생성
+
+                  ð· 이미지로 4마디 생성
+
                 </button>
+
                 <button className="btn-save" onClick={handleSave} title="브라우저에 현재 악보 저장">
-                  💾 악보 저장
+
+                  ð¾ 악보 저장
+
                 </button>
+
                 <button className="btn-load" onClick={handleOpenLoadModal} title="저장된 악보 불러오기">
-                  📂 불러오기
+
+                  ð 불러오기
+
                 </button>
+
                 <button className="btn-reset" onClick={handleReset} title="처음부터 다시 작성">
-                  🔄 전체 초기화
+
+                  ð 전체 초기화
+
                 </button>
+
                 <button className="btn-print" onClick={() => window.print()}>
-                  🖨️ A4 악보 출력
+
+                  ð¨️ A4 악보 출력
+
                 </button>
+
               </div>
+
             </div>
+
+  
 
             <div className="meta-grid">
+
               <div>
+
                 <label>곡 제목</label>
+
                 <input value={song.title} onChange={e => setSong({...song, title: e.target.value})} />
+
               </div>
+
               <div>
+
                 <label>아티스트</label>
+
                 <input value={song.artist} onChange={e => setSong({...song, artist: e.target.value})} />
+
               </div>
+
               <div>
+
                 <label>튜닝</label>
+
                 <input value={song.tuning} onChange={e => setSong({...song, tuning: e.target.value})} />
+
               </div>
+
               <div>
+
                 <label>템포 (BPM)</label>
+
                 <input value={song.tempo} onChange={e => setSong({...song, tempo: e.target.value})} />
+
               </div>
+
             </div>
+
+  
 
             {/* 악보 일괄 이조 컨트롤 바 */}
+
             <div className="transpose-bar">
+
               <div className="transpose-title">
-                <span>🎼 악보 일괄 이조 (키 조절 / Transpose):</span>
+
+                <span>ð¼ 악보 일괄 이조 (키 조절 / Transpose):</span>
+
                 <span className="trans-status">
-                  {transposeOffset === 0 ? "원키 (Original)" : transposeOffset > 0 ? `+${transposeOffset} 반음 ↑` : `${transposeOffset} 반음 ↓`}
+
+                  {transposeOffset === 0 ? "원키 (Original)" : transposeOffset > 0 ? \`+${transposeOffset} 반음 ↑\` : \`${transposeOffset} 반음 ↓\`}
+
                 </span>
+
               </div>
+
               <div className="transpose-btns">
+
                 <button className="btn-trans" onClick={() => handleTranspose(-2)} title="온음(2프렛) 낮추기">
+
                   ⏬ -2 (온음↓)
+
                 </button>
+
                 <button className="btn-trans" onClick={() => handleTranspose(-1)} title="반음(1프렛) 낮추기">
-                  🔽 -1 (반음↓)
+
+                  ð½ -1 (반음↓)
+
                 </button>
+
                 <button className="btn-trans" onClick={() => handleTranspose(1)} title="반음(1프렛) 올리기">
-                  🔼 +1 (반음↑)
+
+                  ð¼ +1 (반음↑)
+
                 </button>
+
                 <button className="btn-trans" onClick={() => handleTranspose(2)} title="온음(2프렛) 올리기">
+
                   ⏫ +2 (온음↑)
+
                 </button>
+
                 {transposeOffset !== 0 && (
+
                   <button
+
                     className="btn-trans"
+
                     style={{ background: "#fdf2f8", borderColor: "#f43f5e", color: "#e11d48" }}
+
                     onClick={() => handleTranspose(-transposeOffset)}
+
                     title="원래 키로 되돌리기"
+
                   >
+
                     ↺ 원키 복원
+
                   </button>
+
                 )}
+
               </div>
+
             </div>
+
+  
 
             {/* 빠른 프렛 팔레트 */}
+
             <div className="palette-box">
-              <span className="palette-title">📌 빠른 프렛 버튼:</span>
+
+              <span className="palette-title">ð 빠른 프렛 버튼:</span>
+
               {PALETTE_FRETS.map(fret => (
+
                 <button
+
                   key={fret}
-                  className={`fret-btn ${fret === "DEL" ? "eraser" : ""} ${selectedFret === fret ? "active" : ""}`}
+
+                  className={\`fret-btn ${fret === "DEL" ? "eraser" : ""} ${selectedFret === fret ? "active" : ""}\`}
+
                   onClick={() => setSelectedFret(fret)}
+
                 >
+
                   {fret === "DEL" ? "지우개" : fret}
+
                 </button>
+
               ))}
+
               <input
+
                 className="custom-fret-input"
+
                 placeholder="직접"
+
                 value={customFret}
+
                 onChange={e => {
+
                   setCustomFret(e.target.value);
+
                   if (e.target.value.trim() !== "") setSelectedFret(e.target.value.trim());
+
                 }}
+
               />
+
             </div>
+
+  
 
             <div className="toolbar">
+
               <div className="btn-group">
+
                 <button className="btn-add" onClick={addMeasure}>➕ 마디 추가</button>
+
                 <button className="btn-del" onClick={removeMeasure}>➖ 마지막 마디 삭제</button>
+
               </div>
+
               <div className="btn-group">
+
                 <span style={{ fontSize: "13px", color: "#64748b" }}>
-                  💡 두 자리 프렛 번호(10, 12, 15, 18 등)가 겹치지 않도록 폰트 크기와 자간이 최적화되었습니다.
+
+                  ð¡ 두 자리 프렛 번호(10, 12, 15, 18 등)가 겹치지 않도록 폰트 크기와 자간이 최적화되었습니다.
+
                 </span>
+
               </div>
+
             </div>
+
+  
 
             {/* 마디 목록 */}
+
             {song.measures.map((m, mIdx) => (
+
               <div key={m.id} className="measure-box">
+
                 <div className="measure-header">
+
                   <span className="measure-title">마디 #{mIdx + 1}</span>
-                  <span className="measure-hint">💡 타브 선 위의 동그라미를 클릭하고 0~24 숫자를 바로 입력하세요.</span>
+
+                  <span className="measure-hint">ð¡ 타브 선 위의 동그라미를 클릭하고 0\~24 숫자를 바로 입력하세요.</span>
+
                 </div>
+
+  
 
                 <div className="rhythm-control-bar">
+
                   {m.beats.map((beat, bIdx) => (
+
                     <div key={bIdx} className="beat-control">
+
                       <div className="beat-control-title">{bIdx + 1}박자 음가</div>
+
                       <select
+
                         className="rhythm-select"
+
                         value={beat.type}
+
                         onChange={e => handleRhythmChange(mIdx, bIdx, e.target.value)}
+
                       >
-                        <option value="4">🅠 4분음표 (1칸)</option>
-                        <option value="8">🅠 8분음표 (2칸)</option>
-                        <option value="16">🅠 16분음표 (4칸)</option>
-                        <option value="triplet">🅠³ 셋잇단음표 (3칸)</option>
+
+                        <option value="4">ð  4분음표 (1칸)</option>
+
+                        <option value="8">ð  8분음표 (2칸)</option>
+
+                        <option value="16">ð  16분음표 (4칸)</option>
+
+                        <option value="triplet">ð ³ 셋잇단음표 (3칸)</option>
+
                         {(bIdx === 0 || bIdx === 2) && (
-                          <option value="2">🅗 2분음표 (2박자 병합)</option>
+
+                          <option value="2">ð 2분음표 (2박자 병합)</option>
+
                         )}
+
                       </select>
+
                     </div>
+
                   ))}
+
                 </div>
+
+  
 
                 <div className="staff-container">
+
                   <table className="staff-table">
+
                     <thead>
+
                       <tr>
-                        <th className="staff-header-th staff-header-corner">구분 \ 박자</th>
+
+                        <th className="staff-header-th staff-header-corner">구분 \\ 박자</th>
+
                         {m.beats.map((beat, bIdx) =>
+
                           beat.slots.map((_, sIdx) => (
+
                             <th
-                              key={`${bIdx}-${sIdx}`}
-                              className={`staff-header-th ${sIdx === 0 ? "beat-start-th" : ""}`}
+
+                              key={\`${bIdx}-${sIdx}\`}
+
+                              className={\`staff-header-th ${sIdx === 0 ? "beat-start-th" : ""}\`}
+
                             >
-                              {sIdx === 0 ? `${bIdx + 1}박` : `+${sIdx}`}
+
+                              {sIdx === 0 ? \`${bIdx + 1}박\` : \`+${sIdx}\`}
+
                               <div style={{ fontSize: "10px", fontWeight: "normal", color: "#64748b" }}>
+
                                 {beat.type === "4" ? "4분" : beat.type === "8" ? "8분" : beat.type === "16" ? "16분" : beat.type === "triplet" ? "3연" : "2분"}
+
                               </div>
+
                             </th>
+
                           ))
+
                         )}
+
                       </tr>
+
                     </thead>
+
                     <tbody>
+
                       <tr>
+
                         <td className="chord-title-td">코드 (Chord)</td>
+
                         {m.beats.map((beat, bIdx) =>
+
                           beat.slots.map((slot, sIdx) => (
+
                             <td
-                              key={`${bIdx}-${sIdx}`}
-                              className={`chord-slot-td ${sIdx === 0 ? "beat-start-td" : ""}`}
+
+                              key={\`${bIdx}-${sIdx}\`}
+
+                              className={\`chord-slot-td ${sIdx === 0 ? "beat-start-td" : ""}\`}
+
                             >
+
                               <input
+
                                 placeholder="코드"
+
                                 value={slot.chord || ""}
+
                                 onChange={e => handleSlotChordChange(mIdx, bIdx, sIdx, e.target.value)}
+
                               />
+
                             </td>
+
                           ))
+
                         )}
+
                       </tr>
+
+  
 
                       {STRINGS.map(str => (
-                        <tr key={str.num} className={`string-row string-row-${str.num}`}>
+
+                        <tr key={str.num} className={\`string-row string-row-${str.num}\`}>
+
                           <td className="str-label-td">{str.label}</td>
+
                           {m.beats.map((beat, bIdx) =>
+
                             beat.slots.map((slot, sIdx) => {
+
                               const fretVal = slot.strings[str.num];
-                              const slotKey = `${mIdx}-${bIdx}-${sIdx}`;
+
+                              const slotKey = \`${mIdx}-${bIdx}-${sIdx}\`;
+
                               const isSlotPlaying = playingSlotKey === slotKey;
-                              const inputId = `fret-in-${mIdx}-${bIdx}-${sIdx}-${str.num}`;
+
+                              const inputId = \`fret-in-${mIdx}-${bIdx}-${sIdx}-${str.num}\`;
+
                               const hasFret = fretVal !== undefined && fretVal !== "";
 
+  
+
                               return (
+
                                 <td
-                                  key={`${bIdx}-${sIdx}`}
-                                  className={`slot-cell ${sIdx === 0 ? "beat-start-td" : ""} ${isSlotPlaying ? "playing-slot" : ""}`}
+
+                                  key={\`${bIdx}-${sIdx}\`}
+
+                                  className={\`slot-cell ${sIdx === 0 ? "beat-start-td" : ""} ${isSlotPlaying ? "playing-slot" : ""}\`}
+
                                   onClick={() => document.getElementById(inputId)?.focus()}
+
                                 >
+
                                   <div className="string-line"></div>
+
                                   <input
+
                                     id={inputId}
-                                    className={`inline-fret-input ${hasFret ? "has-fret" : ""} ${fretVal === "X" ? "has-mute" : ""}`}
+
+                                    className={\`inline-fret-input ${hasFret ? "has-fret" : ""} ${fretVal === "X" ? "has-mute" : ""}\`}
+
                                     value={fretVal || ""}
+
                                     placeholder="·"
+
                                     maxLength={2}
+
                                     onChange={e => handleInlineFretChange(mIdx, bIdx, sIdx, str.num, e.target.value)}
+
                                     onKeyDown={e => handleFretKeyDown(e, mIdx, bIdx, sIdx, str.num)}
+
                                     onFocus={e => e.target.select()}
-                                    title={`${str.label} / ${bIdx + 1}박 ${sIdx + 1}번째 프렛 번호 입력`}
+
+                                    title={\`${str.label} / ${bIdx + 1}박 ${sIdx + 1}번째 프렛 번호 입력\`}
+
                                   />
+
                                 </td>
+
                               );
+
                             })
+
                           )}
+
                         </tr>
+
                       ))}
 
+  
+
                       <tr>
+
                         <td className="lyric-title-td">가사 (Lyrics)</td>
+
                         {m.beats.map((beat, bIdx) =>
+
                           beat.slots.map((slot, sIdx) => (
+
                             <td
-                              key={`${bIdx}-${sIdx}`}
-                              className={`lyric-slot-td ${sIdx === 0 ? "beat-start-td" : ""}`}
+
+                              key={\`${bIdx}-${sIdx}\`}
+
+                              className={\`lyric-slot-td ${sIdx === 0 ? "beat-start-td" : ""}\`}
+
                             >
+
                               <input
+
                                 placeholder=""
+
                                 value={slot.lyric || ""}
+
                                 onChange={e => handleLyricChange(mIdx, bIdx, sIdx, e.target.value)}
+
                               />
+
                             </td>
+
                           ))
+
                         )}
+
                       </tr>
+
                     </tbody>
+
                   </table>
+
                 </div>
+
               </div>
+
             ))}
+
           </div>
 
+  
+
           {/* 4마디 악보 이미지 자동 인식 모달 */}
+
           {showOcrModal && (
+
             <div className="modal-overlay no-print" onClick={() => setShowOcrModal(false)}>
+
               <div className="modal-card" onClick={e => e.stopPropagation()}>
+
                 <div className="modal-header">
-                  <h3>📷 4마디 타브 악보 이미지 자동 인식</h3>
+
+                  <h3>ð· 4마디 타브 악보 이미지 자동 인식</h3>
+
                   <button style={{ background: "transparent", color: "#64748b", fontSize: "18px" }} onClick={() => setShowOcrModal(false)}>✕</button>
+
                 </div>
+
+  
 
                 <div className="guide-box">
+
                   <div className="guide-title">
-                    <span>📌 권장 이미지 형식 (4마디 1줄 캡처)</span>
+
+                    <span>ð 권장 이미지 형식 (4마디 1줄 캡처)</span>
+
                   </div>
+
                   <div className="guide-desc">
+
                     제시해주신 형태처럼 <strong>가로 4마디(4 Measures)가 한 줄로 깨끗하게 캡처된 타브 악보 이미지</strong>를 권장합니다.<br />
+
                     아래 예시와 같은 비율로 캡처된 이미지를 올리시면 정확하게 프렛 번호와 박자를 읽어냅니다.
+
                   </div>
+
                   
+
                   <svg className="sample-preview-img" viewBox="0 0 700 70" height="70">
+
                     <rect width="100%" height="100%" fill="#ffffff" />
+
                     {[15, 23, 31, 39, 47, 55].map((y, i) => (
+
                       <line key={i} x1="10" y1={y} x2="690" y2={y} stroke="#94a3b8" strokeWidth="1" />
+
                     ))}
+
                     <line x1="10" y1="15" x2="10" y2="55" stroke="#000" strokeWidth="2" />
+
                     <line x1="180" y1="15" x2="180" y2="55" stroke="#000" strokeWidth="1" />
+
                     <line x1="350" y1="15" x2="350" y2="55" stroke="#000" strokeWidth="1" />
+
                     <line x1="520" y1="15" x2="520" y2="55" stroke="#000" strokeWidth="1" />
+
                     <line x1="690" y1="15" x2="690" y2="55" stroke="#000" strokeWidth="2" />
+
                     <text x="15" y="12" fontSize="9" fontWeight="bold" fill="#64748b">[마디 1]</text>
+
                     <text x="60" y="27" fontSize="10" fontWeight="bold" fill="#1e293b">15</text>
+
                     <text x="80" y="27" fontSize="10" fontWeight="bold" fill="#1e293b">13</text>
+
                     <text x="120" y="19" fontSize="10" fontWeight="bold" fill="#1e293b">15</text>
+
                     <text x="140" y="19" fontSize="10" fontWeight="bold" fill="#1e293b">15</text>
 
+  
+
                     <text x="185" y="12" fontSize="9" fontWeight="bold" fill="#64748b">[마디 2]</text>
+
                     <text x="210" y="35" fontSize="10" fontWeight="bold" fill="#1e293b">12</text>
+
                     <text x="235" y="35" fontSize="10" fontWeight="bold" fill="#1e293b">14</text>
+
                     <text x="280" y="19" fontSize="10" fontWeight="bold" fill="#1e293b">10 12 13</text>
 
+  
+
                     <text x="355" y="12" fontSize="9" fontWeight="bold" fill="#64748b">[마디 3]</text>
+
                     <text x="380" y="27" fontSize="10" fontWeight="bold" fill="#1e293b">12-13</text>
 
+  
+
                     <text x="525" y="12" fontSize="9" fontWeight="bold" fill="#64748b">[마디 4]</text>
+
                     <text x="550" y="27" fontSize="10" fontWeight="bold" fill="#1e293b">10 12 13</text>
+
                     <text x="610" y="19" fontSize="10" fontWeight="bold" fill="#1e293b">15</text>
+
                   </svg>
+
                 </div>
+
+  
 
                 <div
+
                   className="drop-zone"
+
                   onClick={() => ocrFileInputRef.current?.click()}
+
                   title="클릭하여 파일 선택 또는 이미지를 클립보드에서 Ctrl+V로 붙여넣으세요"
+
                 >
-                  <div className="drop-zone-icon">🖼️</div>
+
+                  <div className="drop-zone-icon">ð¼️</div>
+
                   <div style={{ fontWeight: "700", fontSize: "14px", color: "#334155", marginBottom: "4px" }}>
+
                     4마디 타브 악보 이미지를 클릭하여 선택하거나 <strong>Ctrl+V</strong>로 붙여넣으세요
+
                   </div>
+
                   <div style={{ fontSize: "12px", color: "#64748b" }}>
+
                     PNG, JPG, WebP 캡처 이미지 지원
+
                   </div>
+
                   <input
+
                     ref={ocrFileInputRef}
+
                     type="file"
+
                     accept="image/*"
+
                     style={{ display: "none" }}
+
                     onChange={e => handleImageSelect(e.target.files[0])}
+
                   />
+
                 </div>
+
+  
 
                 {imagePreview && (
+
                   <div style={{ marginBottom: "16px", textAlign: "center" }}>
+
                     <div style={{ fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>
+
                       선택된 4마디 이미지 미리보기:
+
                     </div>
+
                     <img src={imagePreview} alt="Preview" style={{ maxWidth: "100%", maxHeight: "140px", border: "1px solid #cbd5e1", borderRadius: "6px" }} />
+
                   </div>
+
                 )}
+
+  
 
                 <div className="api-key-box">
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <label style={{ margin: 0 }}>🔑 Gemini API Key (무료 AI 비전 판독용):</label>
+
+                    <label style={{ margin: 0 }}>ð Gemini API Key (무료 AI 비전 판독용):</label>
+
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ fontSize: "11px", color: "#2563eb", textDecoration: "underline" }}>
+
                       무료 API 키 발급받기
+
                     </a>
+
                   </div>
+
                   <input
+
                     type="password"
+
                     placeholder="AI Studio에서 발급받은 Gemini API 키 입력 (브라우저에 자동 보관)"
+
                     value={geminiApiKey}
+
                     onChange={e => setGeminiApiKey(e.target.value)}
+
                   />
+
                 </div>
+
+  
 
                 <div style={{ display: "flex", gap: "16px", marginBottom: "18px", fontSize: "13px", color: "#334155" }}>
+
                   <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+
                     <input
+
                       type="radio"
+
                       name="ocrMode"
+
                       checked={!ocrModeAppend}
+
                       onChange={() => setOcrModeAppend(false)}
+
                     />
+
                     새 악보로 4마디 생성 (대체)
+
                   </label>
+
                   <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+
                     <input
+
                       type="radio"
+
                       name="ocrMode"
+
                       checked={ocrModeAppend}
+
                       onChange={() => setOcrModeAppend(true)}
+
                     />
+
                     기존 악보 뒤에 4마디 추가
+
                   </label>
+
                 </div>
 
+  
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+
                   <button
+
                     style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1" }}
+
                     onClick={loadExampleSample}
+
                     title="첨부해주신 솔로 4마디 악보 데이터를 즉시 로드합니다"
+
                   >
+
                     ✨ 첨부 예시 악보 즉시 생성
+
                   </button>
+
+  
 
                   <div style={{ display: "flex", gap: "8px" }}>
+
                     <button style={{ background: "#e2e8f0", color: "#334155" }} onClick={() => setShowOcrModal(false)}>
+
                       취소
+
                     </button>
+
                     <button
+
                       className="btn-ocr"
+
                       disabled={isAnalyzing}
+
                       onClick={handleAnalyzeImage}
+
                     >
-                      {isAnalyzing ? "⏳ AI 이미지 판독 중..." : "🚀 4마디 자동 변환 시작"}
+
+                      {isAnalyzing ? "⏳ AI 이미지 판독 중..." : "ð 4마디 자동 변환 시작"}
+
                     </button>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
+
           )}
+
+  
 
           {/* 저장 목록 모달 */}
+
           {showLoadModal && (
+
             <div className="modal-overlay no-print" onClick={() => setShowLoadModal(false)}>
+
               <div className="modal-card" onClick={e => e.stopPropagation()}>
+
                 <div className="modal-header">
-                  <h3>📂 저장된 악보 목록</h3>
+
+                  <h3>ð 저장된 악보 목록</h3>
+
                   <button style={{ background: "transparent", color: "#64748b", fontSize: "18px" }} onClick={() => setShowLoadModal(false)}>✕</button>
+
                 </div>
+
+  
 
                 {savedList.length === 0 ? (
+
                   <p style={{ textAlign: "center", color: "#64748b", padding: "24px 0", fontSize: "14px" }}>
-                    아직 브라우저에 저장된 악보가 없습니다.<br />[💾 악보 저장] 버튼을 눌러 악보를 저장해 보세요.
+
+                    아직 브라우저에 저장된 악보가 없습니다.<br />[ð¾ 악보 저장] 버튼을 눌러 악보를 저장해 보세요.
+
                   </p>
+
                 ) : (
+
                   <div className="saved-list">
+
                     {savedList.map(item => (
+
                       <div key={item.id} className="saved-item">
+
                         <div className="saved-item-info">
+
                           <div className="saved-item-title">{item.title}</div>
+
                           <div className="saved-item-date">저장일시: {item.savedAt}</div>
+
                         </div>
+
                         <div className="saved-item-actions">
+
                           <button className="btn-load" style={{ padding: "6px 12px", fontSize: "12px" }} onClick={() => loadSavedScore(item)}>
+
                             열기
+
                           </button>
+
                           <button className="btn-del" style={{ padding: "6px 10px", fontSize: "12px" }} onClick={() => deleteSavedScore(item.id)}>
+
                             삭제
+
                           </button>
+
                         </div>
+
                       </div>
+
                     ))}
+
                   </div>
+
                 )}
 
+  
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
+
                   <button style={{ background: "#475569", color: "white", fontSize: "13px" }} onClick={() => fileInputRef.current?.click()}>
-                    📁 컴퓨터에서 파일 열기 (.json)
+
+                    ð 컴퓨터에서 파일 열기 (.json)
+
                   </button>
+
                   <input
+
                     ref={fileInputRef}
+
                     type="file"
+
                     accept=".json"
+
                     style={{ display: "none" }}
+
                     onChange={e => {
+
                       const file = e.target.files[0];
+
                       if (!file) return;
+
                       const reader = new FileReader();
+
                       reader.onload = (event) => {
+
                         try {
+
                           const data = JSON.parse(event.target.result);
+
                           if (data.measures) {
+
                             setSong(data);
+
                             setShowLoadModal(false);
+
                             setTransposeOffset(0);
-                            showToast(`📂 파일에서 "${data.title}" 악보를 성공적으로 불러왔습니다.`);
+
+                            showToast(\`ð 파일에서 "${data.title}" 악보를 성공적으로 불러왔습니다.\`);
+
                           }
+
                         } catch (err) {
+
                           alert("파일을 읽는 중 오류가 발생했습니다.");
+
                         }
+
                       };
+
                       reader.readAsText(file);
+
                     }}
+
                   />
+
                   <button style={{ background: "#e2e8f0", color: "#334155", fontSize: "13px" }} onClick={() => setShowLoadModal(false)}>
+
                     닫기
+
                   </button>
+
                 </div>
+
               </div>
+
             </div>
+
           )}
 
+  
+
           {/* A4 악보 용지 영역 */}
+
           <div className="sheet-wrapper">
+
             <div className="a4-sheet">
+
               <div className="sheet-header">
+
                 <h1 className="sheet-title">{song.title}</h1>
+
                 <div className="sheet-meta">
                   <span><strong>Artist:</strong> {song.artist}</span>
                   <span><strong>Tuning:</strong> {song.tuning}</span>
+                  <span><strong>Time:</strong> 4/4 박자</span>
                   <span><strong>Tempo:</strong> ♩={song.tempo}</span>
                   <span><strong>Layout:</strong> 4 Measures / Line</span>
                 </div>
+
               </div>
+
               <div ref={scoreRef} className="score-view" />
+
             </div>
+
           </div>
+
         </div>
+
       );
+
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  
+
+        ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
